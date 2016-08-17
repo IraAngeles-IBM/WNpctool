@@ -38,7 +38,21 @@
 #include <afxcontrolbars.h>     // 功能区和控件条的 MFC 支持
 
 
+#include <afxmt.h>
+#include <math.h>
+#include "RKUpgradeDll.h"
+#ifdef _DEBUG
+#pragma comment(lib,"RKUpgrade_Debug.lib")
+#else
+#pragma comment(lib,"RKUpgrade.lib")
+#endif
 
+#include "cmBase.h"
+#ifdef _DEBUG
+#pragma comment(lib,"cmMfcLib_vs2008_Debug.lib")
+#else
+#pragma comment(lib,"cmMfcLib_vs2008.lib")
+#endif
 
 
 

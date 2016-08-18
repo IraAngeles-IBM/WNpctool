@@ -16,10 +16,10 @@ UINT ThreadScanDevice(LPVOID lpParam)
 	pMainDlg->ScanDeviceProc();
 	return 0;
 }
-UINT ThreadBurning(LPVOID lpParam)
+UINT ThreadWrite(LPVOID lpParam)
 {
 	CWNpctoolDlg* pMainDlg = (CWNpctoolDlg*)lpParam;
-	pMainDlg->BurningProc();
+	pMainDlg->WriteProc();
 	return 0;
 }
 UINT ThreadReading(LPVOID lpParam)
@@ -84,6 +84,7 @@ BEGIN_MESSAGE_MAP(CWNpctoolDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_COMMAND(ID_LOG_FOLDER, &CWNpctoolDlg::OnLogFolder)
 	ON_BN_CLICKED(ID_BTN_WRITE, &CWNpctoolDlg::OnBnClickedBtnWrite)
+	ON_COMMAND(ID_SETTING_MODE, &CWNpctoolDlg::OnSettingMode)
 END_MESSAGE_MAP()
 
 
@@ -119,6 +120,8 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	m_ConfigModeDlg.Create(IDD_DIALOG_MODE);
+
 	m_strModulePath     = cmPath::GetModulePath();
 	m_strLogPath = m_strModulePath + _T("Log\\");
 
@@ -373,7 +376,7 @@ void CWNpctoolDlg::OnClose()
 	CDialog::OnClose();
 }
 
-BOOL CWNpctoolDlg::BurningProc()
+BOOL CWNpctoolDlg::WriteProc()
 {
 	BOOL bSuccess=FALSE,bRet;
 	LPSTR lpszData=NULL;
@@ -552,5 +555,40 @@ Exit_Read:
 void CWNpctoolDlg::OnBnClickedBtnWrite()
 {
 	// TODO: Add your control notification handler code here
-	
+	m_csScanLock.Lock();
+	if (m_nDeviceCount!=1)
+	{
+		m_csScanLock.Unlock();
+		MessageBox(_T("Not found rockusb to burn."),_T("Error"),MB_OK|MB_ICONERROR);
+		return;
+	}
+	CString strText;
+	m_lblDevice.GetWindowText(strText);
+	if (strText.Find(_T("loader"))!=-1)
+	{
+		m_bExistLoader = TRUE;
+	}
+	else 
+		m_bExistLoader = FALSE;
+	m_csScanLock.Unlock();
+	if (m_arrayDownloadItem.size()<=0)
+	{
+		MessageBox(_T("No item to burn."),_T("Error"),MB_OK|MB_ICONERROR);
+		return;
+	}
+	//EnableCtrl(FALSE);
+	m_bRun = TRUE;
+
+	//1.判断有哪些项需要写入
+
+	//2.判断写入项是以什么方式获取写入的值（1-手动   2-自增  3.文件导入）
+
+	//3.获取写入的值
+	AfxBeginThread(ThreadWrite,(LPVOID)this);
+}
+
+void CWNpctoolDlg::OnSettingMode()
+{
+	// TODO: Add your command handler code here
+	m_ConfigModeDlg.ShowWindow(SW_SHOW);
 }

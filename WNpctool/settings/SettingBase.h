@@ -3,6 +3,7 @@
 #define USER_LOGIN
 #define APP_VER " V1.1.2"
 #include "inifile.h"
+#include "../config.h"
 
 #include <vector>
 #define LAN_ACTION TRUE
@@ -171,6 +172,15 @@ public:
         strServer = strIP;
     }
 public:
+	//STRUCT_BASIC_CONFIG     basic;
+	STRUCT_SN_CONFIG        sn;
+	STRUCT_WIFI_CONFIG      wifi;
+	STRUCT_IMEI_CONFIG      imei;
+	STRUCT_MAC_CONFIG       WifiMac;
+	STRUCT_MAC_CONFIG       BtMac;
+	STRUCT_SN_CONFIG        devsn;
+	CFGPATH                 confPath;
+	LONG                    curFilePos[FLAG_CNT];
     std::wstring szLan;
     bool         bDebug;
     int          nLogLevel;

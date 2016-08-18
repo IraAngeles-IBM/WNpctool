@@ -28,87 +28,85 @@ typedef struct _CFG_PATH_
     unsigned short  CRC;
 }CFGPATH,*PCFGPATH;
 
-typedef struct{
-    CString strRFxml;
-    CString strLogPath;
-    BOOL    bAutoTest;
-    BOOL    bEndIfFail;
-    BOOL    bSetNormalMode;
-    BOOL    bWriteImei;
-    BOOL    bWriteImei2;
-    BOOL    bIpcsTrace;
-    int     nDutLog;
-    DWORD   dwDLCloseSleep;
-    BOOL    bUseATCom;
-    BOOL    bStressTest;
-    DWORD   dwTotal;
-    DWORD   dwPass;
-    BOOL    bRebootDevice;
-    double  d3GMaxloss;
-    double  d2GMaxloss;
-    int     nWCDMAChannels[8][3];
-    int     GSMChannels[4][3];
-    int     DeviceType;
-    CString strDefImei1;
-    CString strDefImei2;
+typedef struct
+{
+	std::wstring	strLogPath;
+	BOOL			bAutoTest;
+	BOOL			bEndIfFail;
+	BOOL			bSetNormalMode;
+	BOOL			bWriteImei;
+	BOOL			bWriteImei2;
+    BOOL			bIpcsTrace;
+    int				nDutLog;
+    DWORD			dwDLCloseSleep;
+    BOOL			bUseATCom;
+    BOOL			bStressTest;
+    DWORD			dwTotal;
+    DWORD			dwPass;
+    BOOL			bRebootDevice;
+    double			d3GMaxloss;
+    double			d2GMaxloss;
+    int				nWCDMAChannels[8][3];
+    int				GSMChannels[4][3];
+    int				DeviceType;
 
 }STRUCT_BASIC_CONFIG,*PSTRUCT_BASIC_CONFIG;
 typedef struct{
-    BOOL    bEnable;
-    int     nSnLength;
-    CString strPrefix;
-    CString strSuffix;
-    BOOL    bForcingWrite;
-    INT     bAutoMode;      /*0 manual 1 auto 2 file **/
-    CString strStartSn;
-    int     nSnCount;
-    CString strCurrentSn;
-    int     nRemainCount;
-    BOOL    bHexCarry;
+    BOOL			bEnable;
+    int				nSnLength;
+    std::wstring	strPrefix;
+    std::wstring	strSuffix;
+    BOOL			bForcingWrite;
+    INT				bAutoMode;      /*0 manual 1 auto 2 file **/
+    std::wstring	strStartSn;
+    int				nSnCount;
+    std::wstring	strCurrentSn;
+    int				nRemainCount;
+    BOOL			bHexCarry;
 }STRUCT_SN_CONFIG,*PSTRUCT_SN_CONFIG;
 
 /*added by lanshh */
 typedef struct{
-    BOOL    bEnable;
-    int     nSnLength;
-    CString strPrefix;
-    CString strSuffix;
-    BOOL    bForcingWrite;
-    INT    bAutoMode;      /*0:manual 1:auto 2:file **/
-    CString strStartSn;
-    int     nSnCount;
-    CString strCurrentSn;
-    int     nRemainCount;
-    BOOL    bHexCarry;
+    BOOL			bEnable;
+    int				nSnLength;
+    std::wstring	strPrefix;
+    std::wstring	strSuffix;
+    BOOL			bForcingWrite;
+    INT				bAutoMode;      /*0:manual 1:auto 2:file **/
+    std::wstring	strStartSn;
+    int				nSnCount;
+    std::wstring	strCurrentSn;
+    int				nRemainCount;
+    BOOL			bHexCarry;
 }STRUCT_DEVSN_CONFIG,*PSTRUCT_DEVSN_CONFIG;
 #define LOCAL_ADMIN   1
 #define GLOBAL_UNIQUE 2 
 typedef struct{
-	BOOL    bEnable;
-	BOOL    bForcingWrite;
-	INT     bAutoMode;
-	CString strStartMac;
-	CString strCurrentMac;
-    int     nCount;
-	int     nRemainCount;
-    DWORD   dwType;
+	BOOL			bEnable;
+	BOOL			bForcingWrite;
+	INT				bAutoMode;
+	std::wstring	strStartMac;
+	std::wstring	strCurrentMac;
+    int				nCount;
+	int				nRemainCount;
+    DWORD			dwType;
 }STRUCT_MAC_CONFIG,*PSTRUCT__MAC_CONFIG;
 
 typedef struct{
-	BOOL    bEnable;
-	BOOL    bForcingWrite;
-	INT     bAutoMode;
+	BOOL			bEnable;
+	BOOL			bForcingWrite;
+	INT				bAutoMode;
  
-	CString strStartImei1;
-	CString strCurrentImei1;
-    int     nCount1;
-	int     nRemainCount1;
+	std::wstring	strStartImei1;
+	std::wstring	strCurrentImei1;
+    int				nCount1;
+	int				nRemainCount1;
 
-    BOOL    bImei2;
-	CString strStartImei2;
-	CString strCurrentImei2;
-    int     nCount2;
-	int     nRemainCount2;
+    BOOL			bImei2;
+	std::wstring	strStartImei2;
+	std::wstring	strCurrentImei2;
+    int				nCount2;
+	int				nRemainCount2;
 
 }STRUCT_IMEI_CONFIG,*PSTRUCT__IMEI_CONFIG;
 
@@ -152,17 +150,4 @@ typedef struct{
     BOOL    bStopIfFail;
 }STRUCT_POWER_CONFIG,*PSTRUCT_POWER_CONFIG;
 
-typedef struct{
-    STRUCT_BASIC_CONFIG     basic;
-    STRUCT_SN_CONFIG        sn;
-    STRUCT_WIFI_CONFIG      wifi;
-    STRUCT_RF_CONFIG        rf;
-    STRUCT_IMEI_CONFIG      imei;
-    STRUCT_MAC_CONFIG       WifiMac;
-    STRUCT_MAC_CONFIG       BtMac;
-    STRUCT_SN_CONFIG        devsn;
-    STRUCT_POWER_CONFIG     PS;
-    CFGPATH                 confPath;
-    LONG                    curFilePos[FLAG_CNT];
-}STRUCT_ALL_CONFIG,*PSTRUCT_ALL_CONFIG;
 #endif

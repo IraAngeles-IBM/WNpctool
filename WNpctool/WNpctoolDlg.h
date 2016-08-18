@@ -13,6 +13,7 @@
 using namespace cm;
 #include "settings/SettingBase.h"
 #include "afxwin.h"
+#include "ConfigMode.h"
 
 
 typedef struct _STRUCT_BURNINGITEM
@@ -36,7 +37,7 @@ public:
 public:
 	CIniSettingBase m_Configs;
 	void ScanDeviceProc();
-	BOOL BurningProc();
+	BOOL WriteProc();
 	BOOL ReadProc();
 private:
 	CString         m_strModulePath;
@@ -54,6 +55,8 @@ private:
 	BOOL m_bExistLoader;
 	BOOL m_bDownBoot;
 	BOOL m_bRun;
+
+	CConfigMode m_ConfigModeDlg;
 
 	BOOL LoadConfig();
 	VOID InitUi();
@@ -74,4 +77,5 @@ public:
 	afx_msg void OnClose();
 	CStatic m_lblDevice;
 	afx_msg void OnBnClickedBtnWrite();
+	afx_msg void OnSettingMode();
 };

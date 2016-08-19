@@ -14,10 +14,11 @@
 #define FLAG_MAC                1
 #define FLAG_WIFIMAC            1
 #define FLAG_BTMAC              2
-#define FLAG_IMEI1              3
-#define FLAG_IMEI2              4
-#define FLAG_CNT                5
-#define FLAG_AUTO               6
+#define FLAG_LANMAC             3
+#define FLAG_IMEI1              4
+#define FLAG_IMEI2              5
+#define FLAG_CNT                6
+#define FLAG_AUTO               7
 typedef struct _CFG_PATH_
 {
     TCHAR           filePath[FLAG_CNT][MAX_PATH];
@@ -57,10 +58,11 @@ typedef struct{
     std::wstring	strPrefix;
     std::wstring	strSuffix;
     BOOL			bForcingWrite;
-    INT				bAutoMode;      /*0 manual 1 auto 2 file **/
+    INT				nAutoMode;      /*0 manual 1 auto 2 file **/
     std::wstring	strStartSn;
     int				nSnCount;
     std::wstring	strCurrentSn;
+	std::wstring	strEndSn;
     int				nRemainCount;
     BOOL			bHexCarry;
 }STRUCT_SN_CONFIG,*PSTRUCT_SN_CONFIG;
@@ -84,9 +86,10 @@ typedef struct{
 typedef struct{
 	BOOL			bEnable;
 	BOOL			bForcingWrite;
-	INT				bAutoMode;
+	INT				nAutoMode;
 	std::wstring	strStartMac;
 	std::wstring	strCurrentMac;
+	std::wstring	strEndMac;
     int				nCount;
 	int				nRemainCount;
     DWORD			dwType;

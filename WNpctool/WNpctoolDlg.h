@@ -15,6 +15,13 @@ using namespace cm;
 #include "afxwin.h"
 #include "ConfigMode.h"
 
+enum ENUM_WRITEITEM_ID{
+	ITEM_SN = 1,
+	ITEM_WIFIMAC,
+	ITEM_LANMAC,
+	ITEM_BTMAC,
+
+};
 
 typedef struct _STRUCT_BURNINGITEM
 {
@@ -36,30 +43,49 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 public:
 	CIniSettingBase m_Configs;
+	CIniLocalLan	m_Lan;
 	void ScanDeviceProc();
 	BOOL WriteProc();
 	BOOL ReadProc();
+	BOOL WriteItem(int nItemID);
+	BOOL ReadItem(int nItemID);
 private:
 	CString         m_strModulePath;
-	CString m_strLogPath;
-	CString m_strLoader;
-	cmLog   *m_pLogObject;
-	CWinThread *m_pScanThread;
-	CEvent  *m_pScanEvent;
+	CString			m_strLogPath;
+	CString			m_strLoader;
+	cmLog			*m_pLogObject;
+
+	CString         m_strCurDevSn;
+	CString         m_strCurWifiMac;
+	CString         m_strCurBtMac;
+	CString         m_strCurLanMac;
+
+	BOOL			m_bUserStop;
+	BOOL            m_bStarWrite;
+	BOOL            m_bStarRead;
+	CWinThread      *m_pReadThread;
+	CWinThread      *m_pWriteThread;
+	CWinThread		*m_pScanThread;
+	CEvent			*m_pScanEvent;
 	CCriticalSection m_csScanLock;
-	BOOL m_bUpgradeDllInitOK;
-	BOOL m_bTerminated;
-	UINT m_nDeviceCount;
-	BOOL m_bExistMsc;
-	BOOL m_bExistAdb;
-	BOOL m_bExistLoader;
-	BOOL m_bDownBoot;
-	BOOL m_bRun;
+	BOOL			m_bUpgradeDllInitOK;
+	BOOL			m_bTerminated;
+	UINT			m_nDeviceCount;
+	BOOL			m_bExistMsc;
+	BOOL			m_bExistAdb;
+	BOOL			m_bExistLoader;
+	BOOL			m_bRun;
 
 	CConfigMode m_ConfigModeDlg;
 
-	BOOL LoadConfig();
-	VOID InitUi();
+	BOOL	LoadConfig();
+	VOID	InitUi();
+	BOOL	OnStartRead();
+	BOOL	OnStartWrite();
+	std::wstring GetLocalString(std::wstring strKey)
+	{
+		return m_Lan.GetStr(strKey,TEXT(""));
+	}
 
 // 实现
 protected:

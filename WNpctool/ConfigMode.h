@@ -4,6 +4,7 @@
 #include "LanMacDlg.h"
 #include "SnDlg.h"
 #include "WifiMacDlg.h"
+#include "settings/SettingBase.h"
 
 
 // CConfigMode dialog
@@ -13,7 +14,7 @@ class CConfigMode : public CDialog
 	DECLARE_DYNAMIC(CConfigMode)
 
 public:
-	CConfigMode(CWnd* pParent = NULL);   // standard constructor
+	CConfigMode(CIniSettingBase &Config,CWnd* pParent = NULL);   // standard constructor
 	virtual ~CConfigMode();
 
 // Dialog Data
@@ -25,14 +26,17 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	CDialog     *m_ChildCWnds[5];
-	int         m_iCurSelTab;
-	CSnDlg		m_SnDlg;
-	CWifiMacDlg	m_WifiMacDlg;
-	CLanMacDlg	m_LanMacDlg;
-	CBtMacDlg	m_BtMacDlg;
+public:
+	CIniSettingBase &m_Configs;
+	CDialog			*m_ChildCWnds[5];
+	int				m_iCurSelTab;
+	CSnDlg			m_SnDlg;
+	CWifiMacDlg		m_WifiMacDlg;
+	CLanMacDlg		m_LanMacDlg;
+	CBtMacDlg		m_BtMacDlg;
 
-	void        OnSizeCtl( int cx, int cy);
+	VOID			UpdateInterface();
+	void			OnSizeCtl( int cx, int cy);
 
 public:
 	virtual BOOL OnInitDialog();

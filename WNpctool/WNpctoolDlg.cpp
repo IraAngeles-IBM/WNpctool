@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "WNpctool.h"
 #include "WNpctoolDlg.h"
+#include "cmfuns.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -66,7 +67,8 @@ END_MESSAGE_MAP()
 
 
 CWNpctoolDlg::CWNpctoolDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CWNpctoolDlg::IDD, pParent)
+	: CDialog(CWNpctoolDlg::IDD, pParent),m_ConfigModeDlg(m_Configs),
+	m_bStarWrite(FALSE),m_bStarRead(FALSE),m_pWriteThread(NULL),m_pReadThread(NULL)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -120,6 +122,12 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	m_pScanEvent        = NULL;
+	m_pScanThread       = NULL;
+	m_bUserStop         = FALSE;
+	m_pWriteThread      = NULL;
+	m_pReadThread       = NULL;
+
 	m_ConfigModeDlg.Create(IDD_DIALOG_MODE);
 
 	m_strModulePath     = cmPath::GetModulePath();
@@ -153,7 +161,6 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	m_pScanEvent = NULL;
 	m_pScanThread = NULL;
 	m_bRun = FALSE;
-	m_bDownBoot = FALSE;
 	if (LoadConfig())
 	{
 		INIT_DEV_INFO InitDevInfo;
@@ -184,6 +191,9 @@ BOOL CWNpctoolDlg::OnInitDialog()
 			m_pScanThread = AfxBeginThread(ThreadScanDevice,(LPVOID)this);
 		}
 
+	} else {
+		MessageBox(_T("Loading config file failed!"),_T("ERROR"),MB_ICONERROR|MB_OK);
+		exit(-1);
 	}
 	InitUi();
 
@@ -242,29 +252,58 @@ HCURSOR CWNpctoolDlg::OnQueryDragIcon()
 
 VOID CWNpctoolDlg::InitUi()
 {
+	GetDlgItem(IDC_EDIT_SN)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_WIFIMAC)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_BTMAC)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(FALSE);
+	GetDlgItem(ID_BTN_WRITE)->SetWindowText(_T("读取"));
 
+	if (!m_Configs.bReadInfo)
+	{
+		GetDlgItem(ID_BTN_WRITE)->SetWindowText(_T("写入"));
+		if (m_Configs.devsn.bEnable&&m_Configs.devsn.nAutoMode == MODE_MANUAL)
+		{
+			GetDlgItem(IDC_EDIT_SN)->EnableWindow(TRUE);
+		}
+
+		if (m_Configs.WifiMac.bEnable&&m_Configs.WifiMac.nAutoMode == MODE_MANUAL)
+		{
+			GetDlgItem(IDC_EDIT_WIFIMAC)->EnableWindow(TRUE);
+		}
+
+		if (m_Configs.BtMac.bEnable&&m_Configs.BtMac.nAutoMode == MODE_MANUAL)
+		{
+			GetDlgItem(IDC_EDIT_BTMAC)->EnableWindow(TRUE);
+		}
+
+		if (m_Configs.LanMac.bEnable&&m_Configs.LanMac.nAutoMode == MODE_MANUAL)
+		{
+			GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(TRUE);
+		}
+	}
 }
+
 BOOL CWNpctoolDlg::LoadConfig()
 {
-	//CString strConfigPath;
-	//strConfigPath = m_strModulePath + _T("config.ini");
-	//if (!cmFile::IsExisted(strConfigPath))
-	//{
-	//	if (m_pLogObject)
-	//	{
-	//		m_pLogObject->Record(_T("Error:LoadConfig-->config.ini PathFileExists failed."));
-	//	}
-	//	return FALSE;
-	//}
-	//bool bLoadConfig = m_Configs.LoadToolSetting(strConfigPath.GetString());
-	//if (!bLoadConfig)
-	//{
-	//	if (m_pLogObject)
-	//	{
-	//		m_pLogObject->Record(_T("LoadConfig-->Load file failed"));
-	//	}
-	//	return FALSE;
-	//}
+	CString strConfigPath;
+	strConfigPath = m_strModulePath + _T("config.ini");
+	if (!cmFile::IsExisted(strConfigPath))
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:LoadConfig-->config.ini PathFileExists failed."));
+		}
+		return FALSE;
+	}
+	bool bLoadConfig = m_Configs.LoadToolSetting(strConfigPath.GetString());
+	if (!bLoadConfig)
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("LoadConfig-->Load file failed"));
+		}
+		return FALSE;
+	}
 	return TRUE;
 }
 void CWNpctoolDlg::OnLogFolder()
@@ -286,7 +325,6 @@ void CWNpctoolDlg::ScanDeviceProc()
 		m_csScanLock.Unlock();
 		if (m_nDeviceCount==0)
 		{
-			m_bDownBoot = FALSE;
 			m_lblDevice.SetWindowText(_T("Not found rockusb"));
 		}
 		else if (m_nDeviceCount==1)
@@ -378,85 +416,42 @@ void CWNpctoolDlg::OnClose()
 
 BOOL CWNpctoolDlg::WriteProc()
 {
-	BOOL bSuccess=FALSE,bRet;
-	LPSTR lpszData=NULL;
-	BYTE readback[512];
-	USHORT nReadbackSize;
-	int i,nSize;
-	//download boot
-	if ((!m_bExistLoader)&&(!m_bDownBoot))
+	BOOL bSuccess=FALSE;
+
+	//1.烧写devsn,先写后读，读出来的值与写进去的值一致则成功，否则失败
+	if (m_Configs.devsn.bEnable)
 	{
-		bRet = RK_SetFirmware((LPTSTR)(LPCTSTR)m_strLoader);
-		if (!bRet)
+		if(!WriteItem(ITEM_SN))
 		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:RK_SetFirmware failed."));
-			}
-			goto Exit_Burn;
+			m_pLogObject->Record(_T("Write SN failed."));
 		}
-		bRet = RK_DownloadBoot();
-		if (!bRet)
-		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:RK_DownloadBoot failed."));
-			}
-			goto Exit_Burn;
-		}
-		m_bDownBoot = TRUE;
 	}
-	/*for (i=0;i<m_arrayDownloadItem.size();i++)
+	//2.烧写wifimac
+	if (m_Configs.WifiMac.bEnable)
 	{
-		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_arrayDownloadItem[i].strValue);
-		if (!bRet)
+		if(!WriteItem(ITEM_WIFIMAC))
 		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:convert value failed."));
-			}
-			goto Exit_Burn;
+			m_pLogObject->Record(_T("Write WifiMac failed."));
 		}
-		bRet = RK_WriteProvisioningData(m_arrayDownloadItem[i].nID,(PBYTE)lpszData,nSize);		
-		if (!bRet)
+	}
+	//3.烧写btmac
+	if (m_Configs.BtMac.bEnable)
+	{
+		if(!WriteItem(ITEM_BTMAC))
 		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:RK_WriteProvisioningData failed."));
-			}
-			goto Exit_Burn;
+			m_pLogObject->Record(_T("Write BtMac failed."));
 		}
-		memset(readback,0,512);
-		bRet = RK_ReadProvisioningData(m_arrayDownloadItem[i].nID,readback,nReadbackSize);
-		if (!bRet)
+	}
+	//4.烧写lanmac
+	if (m_Configs.LanMac.bEnable)
+	{
+		if(!WriteItem(ITEM_LANMAC))
 		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:RK_WriteProvisioningData readback failed."));
-			}
-			goto Exit_Burn;
+			m_pLogObject->Record(_T("Write LanMac failed."));
 		}
-		if (memcmp(readback,lpszData,nSize)!=0)
-		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:RK_WriteProvisioningData compare failed."));
-			}
-			goto Exit_Burn;
-		}
-		if (lpszData)
-		{
-			delete []lpszData;
-			lpszData = NULL;
-		}
-	}*/
+	}
 	bSuccess = TRUE;
-Exit_Burn:
-	if (lpszData)
-	{
-		delete []lpszData;
-		lpszData = NULL;
-	}
+WriteProc_Exit:
 	m_bRun = FALSE;
 	//EnableCtrl();
 	if (bSuccess)
@@ -467,56 +462,93 @@ Exit_Burn:
 		MessageBox(_T("Burning Failed."),_T("Error"),MB_OK|MB_ICONERROR);
 	return bSuccess;
 }
-BOOL CWNpctoolDlg::ReadProc()
+BOOL CWNpctoolDlg::WriteItem(int nItemID)
 {
-	BOOL bSuccess=FALSE,bRet;
+	BOOL bRet;
+	LPSTR lpszData=NULL;
+	BYTE readback[512];
+	USHORT nReadbackSize;
+	int nSize;
+
+	//1.烧写devsn,先写后读，读出来的值与写进去的值一致则成功，否则失败
+	//烧写devsn
+	if (ITEM_SN == nItemID)
+	{
+		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurDevSn);
+	}else if (ITEM_WIFIMAC == nItemID)
+	{
+		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurWifiMac);
+	}else if (ITEM_BTMAC == nItemID)
+	{
+		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurBtMac);
+	}else if (ITEM_LANMAC == nItemID)
+	{
+		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurLanMac);
+	}
+	else
+	{
+
+	}
+	if (!bRet)
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:convert value failed."));
+		}
+		return FALSE;
+	}
+	bRet = RK_WriteProvisioningData(nItemID,(PBYTE)lpszData,nSize);		
+	if (!bRet)
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:RK_WriteProvisioningData failed."));
+		}
+		return FALSE;
+	}
+	//读取devsn
+	memset(readback,0,512);
+	bRet = RK_ReadProvisioningData(nItemID,readback,nReadbackSize);
+	if (!bRet)
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:RK_WriteProvisioningData readback failed."));
+		}
+		return FALSE;
+	}
+	if (memcmp(readback,lpszData,nSize)!=0)
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:RK_WriteProvisioningData compare failed."));
+		}
+		return FALSE;
+	}
+	if (lpszData)
+	{
+		delete []lpszData;
+		lpszData = NULL;
+	}
+	return TRUE;
+}
+BOOL CWNpctoolDlg::ReadItem(int nItemID)
+{
+	BOOL	bRet;
 	CString strID;
 	LPWSTR lpszValue=NULL;
 	int nSize,nID;
 	USHORT nBufSize;
 	BYTE buf[512];
 	nBufSize = 512;
-	//download boot
-	if ((!m_bExistLoader)&&(!m_bDownBoot))
-	{
-		bRet = RK_SetFirmware((LPTSTR)(LPCTSTR)m_strLoader);
-		if (!bRet)
-		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:RK_SetFirmware failed."));
-			}
-			goto Exit_Read;
-		}
-		bRet = RK_DownloadBoot();
-		if (!bRet)
-		{
-			if (m_pLogObject)
-			{
-				m_pLogObject->Record(_T("Error:RK_DownloadBoot failed."));
-			}
-			goto Exit_Read;
-		}
-		m_bDownBoot = TRUE;
-	}
-	//GetDlgItemText(IDC_EDIT_ID,strID);
-	if (strID.IsEmpty())
-	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:ID must be specified."));
-		}
-		goto Exit_Read;
-	}
-	nID = cmNumString::StrToInt32(strID);
-	bRet = RK_ReadProvisioningData(nID,buf,nBufSize);
+	bRet = RK_ReadProvisioningData(nItemID,buf,nBufSize);
 	if (!bRet)
 	{
 		if (m_pLogObject)
 		{
 			m_pLogObject->Record(_T("Error:RK_ReadProvisioningData failed."));
 		}
-		goto Exit_Read;
+		return FALSE;
 	}
 	if (nBufSize==0)
 	{
@@ -524,7 +556,7 @@ BOOL CWNpctoolDlg::ReadProc()
 		{
 			m_pLogObject->Record(_T("Error:RK_ReadProvisioningData return size 0."));
 		}
-		goto Exit_Read;
+		return FALSE;
 	}
 	bRet = cmStrCode::AnsiToUnicode(lpszValue,nSize,(LPCSTR)buf);
 	if (!bRet)
@@ -533,15 +565,73 @@ BOOL CWNpctoolDlg::ReadProc()
 		{
 			m_pLogObject->Record(_T("Error:convert value failed."));
 		}
-		goto Exit_Read;
+		return FALSE;
 	}
-	//SetDlgItemText(IDC_EDIT_VALUE,lpszValue);
-	bSuccess = TRUE;
-Exit_Read:
+	if (ITEM_SN == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_SN,lpszValue);
+	}else if (ITEM_WIFIMAC == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_WIFIMAC,lpszValue);
+	}else if (ITEM_BTMAC == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_BTMAC,lpszValue);
+	}else if (ITEM_LANMAC == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_LANMAC,lpszValue);
+	}
+	else
+	{
+
+	}
+
 	if (lpszValue)
 	{
 		delete []lpszValue;
 	}
+	return TRUE;
+}
+BOOL CWNpctoolDlg::ReadProc()
+{
+	BOOL bSuccess=FALSE;
+	
+	if (!ReadItem(ITEM_SN))
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:Read SN failed."));
+		}
+		goto Exit_Read;
+	}
+
+	if (!ReadItem(ITEM_WIFIMAC))
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:Read WifiMac failed."));
+		}
+		goto Exit_Read;
+	}
+
+	if (!ReadItem(ITEM_BTMAC))
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:Read BtMac failed."));
+		}
+		goto Exit_Read;
+	}
+
+	if (!ReadItem(ITEM_LANMAC))
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:Read LanMac failed."));
+		}
+		goto Exit_Read;
+	}
+	bSuccess = TRUE;
+Exit_Read:
 	m_bRun = FALSE;
 	//EnableCtrl();
 	if (bSuccess)
@@ -555,14 +645,39 @@ Exit_Read:
 void CWNpctoolDlg::OnBnClickedBtnWrite()
 {
 	// TODO: Add your control notification handler code here
+	if(m_Configs.bReadInfo) {
+		if(m_pReadThread) { 
+			m_bUserStop     = TRUE;
+			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOPING")).c_str());
+		} else {
+			if(OnStartRead()) {
+				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOP")).c_str());
+			}
+		}
+	} else {
+		if(m_pWriteThread) { 
+			m_bUserStop     = TRUE;
+			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOPING")).c_str());
+		} else {
+			if(OnStartWrite()) {
+				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOP")).c_str());
+			}
+		}
+	}
+}
+BOOL CWNpctoolDlg::OnStartRead()
+{
+	CString     strPromt;
+	CString strText;
+
 	m_csScanLock.Lock();
 	if (m_nDeviceCount!=1)
 	{
 		m_csScanLock.Unlock();
-		MessageBox(_T("Not found rockusb to burn."),_T("Error"),MB_OK|MB_ICONERROR);
-		return;
+		strPromt = _T("Not found rockusb to burn.");
+		//MessageBox(_T("Not found rockusb to burn."),_T("Error"),MB_OK|MB_ICONERROR);
+		goto OnStartReadExit;
 	}
-	CString strText;
 	m_lblDevice.GetWindowText(strText);
 	if (strText.Find(_T("loader"))!=-1)
 	{
@@ -571,24 +686,152 @@ void CWNpctoolDlg::OnBnClickedBtnWrite()
 	else 
 		m_bExistLoader = FALSE;
 	m_csScanLock.Unlock();
-	if (m_arrayDownloadItem.size()<=0)
-	{
-		MessageBox(_T("No item to burn."),_T("Error"),MB_OK|MB_ICONERROR);
-		return;
-	}
-	//EnableCtrl(FALSE);
+
 	m_bRun = TRUE;
+	AfxBeginThread(ThreadReading,(LPVOID)this);
 
-	//1.判断有哪些项需要写入
-
-	//2.判断写入项是以什么方式获取写入的值（1-手动   2-自增  3.文件导入）
-
-	//3.获取写入的值
-	AfxBeginThread(ThreadWrite,(LPVOID)this);
+	return TRUE;
+OnStartReadExit:
+	if(!strPromt.IsEmpty()) {
+		MessageBox(strPromt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_OK|MB_ICONERROR);
+	}
+	return FALSE;
 }
+BOOL CWNpctoolDlg::OnStartWrite()
+{
+	CString     strPromt;
+	CString		strText;
 
+	m_csScanLock.Lock();
+	if (m_nDeviceCount!=1)
+	{
+		m_csScanLock.Unlock();
+		strPromt = _T("Not found rockusb to burn.");
+		//MessageBox(_T("Not found rockusb to burn."),_T("Error"),MB_OK|MB_ICONERROR);
+		goto OnStartWriteExit;
+	}
+	m_lblDevice.GetWindowText(strText);
+	if (strText.Find(_T("loader"))!=-1)
+	{
+		m_bExistLoader = TRUE;
+	}
+	else 
+		m_bExistLoader = FALSE;
+	m_csScanLock.Unlock();
+	if (!(m_Configs.devsn.bEnable||m_Configs.WifiMac.bEnable||m_Configs.BtMac.bEnable||m_Configs.LanMac.bEnable))
+	{
+		strPromt = GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str();
+		//MessageBox(GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str(),_T("Error"),MB_OK|MB_ICONERROR);
+		goto OnStartWriteExit;
+	}
+
+	if (m_Configs.devsn.bEnable)
+	{
+		if (MODE_MANUAL == m_Configs.devsn.nAutoMode)
+		{
+			GetDlgItemText(IDC_EDIT_SN,m_strCurDevSn);
+		}
+		else if (MODE_AUTO == m_Configs.devsn.nAutoMode)
+		{
+			m_strCurDevSn = m_Configs.devsn.strCurrentSn.c_str();
+			SetDlgItemText(IDC_EDIT_SN,m_strCurDevSn);
+		}
+		else
+		{
+
+		}
+	}
+
+	if (m_Configs.WifiMac.bEnable)
+	{
+		if (MODE_MANUAL == m_Configs.WifiMac.nAutoMode)
+		{
+			GetDlgItemText(IDC_EDIT_WIFIMAC,m_strCurWifiMac);
+		}
+		else if (MODE_AUTO == m_Configs.devsn.nAutoMode)
+		{
+			m_strCurWifiMac = m_Configs.WifiMac.strCurrentMac.c_str();
+			SetDlgItemText(IDC_EDIT_WIFIMAC,m_strCurWifiMac);
+			if (m_strCurWifiMac.IsEmpty()||m_Configs.WifiMac.nRemainCount==0) {
+				strPromt = GetLocalString(_T("IDS_ERROR_OUT_OF_BTMAC")).c_str();
+				goto OnStartWriteExit;
+			}
+		}
+		else
+		{
+
+		}
+		if(!CheckMacStr(m_strCurWifiMac)) 
+		{
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_WIFIMAC_FROM_FILE")).c_str(),m_strCurWifiMac);
+			goto OnStartWriteExit;
+		}
+	}
+
+	if (m_Configs.BtMac.bEnable)
+	{
+		if (MODE_MANUAL == m_Configs.BtMac.nAutoMode)
+		{
+			GetDlgItemText(IDC_EDIT_BTMAC,m_strCurBtMac);
+		}
+		else if (MODE_AUTO == m_Configs.BtMac.nAutoMode)
+		{
+			m_strCurBtMac = m_Configs.BtMac.strCurrentMac.c_str();
+			SetDlgItemText(IDC_EDIT_BTMAC,m_strCurBtMac);
+			if (m_strCurBtMac.IsEmpty()||m_Configs.BtMac.nRemainCount==0) {
+				strPromt = GetLocalString(_T("IDS_ERROR_OUT_OF_BTMAC")).c_str();
+				goto OnStartWriteExit;
+			}
+		}
+		else
+		{
+
+		}
+		if(!CheckMacStr(m_strCurBtMac)) 
+		{
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_WIFIMAC_FROM_FILE")).c_str(),m_strCurBtMac);
+			goto OnStartWriteExit;
+		}
+	}
+
+	if (m_Configs.LanMac.bEnable)
+	{
+		if (MODE_MANUAL == m_Configs.LanMac.nAutoMode)
+		{
+			GetDlgItemText(IDC_EDIT_LANMAC,m_strCurLanMac);
+		}
+		else if (MODE_AUTO == m_Configs.LanMac.nAutoMode)
+		{
+			m_strCurLanMac = m_Configs.LanMac.strCurrentMac.c_str();
+			SetDlgItemText(IDC_EDIT_LANMAC,m_strCurLanMac);
+			if (m_strCurLanMac.IsEmpty()||m_Configs.LanMac.nRemainCount==0) {
+				strPromt = GetLocalString(_T("IDS_ERROR_OUT_OF_BTMAC")).c_str();
+				goto OnStartWriteExit;
+			}
+		}
+		else
+		{
+
+		}
+		if(!CheckMacStr(m_strCurLanMac)) 
+		{
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_WIFIMAC_FROM_FILE")).c_str(),m_strCurLanMac);
+			goto OnStartWriteExit;
+		}
+	}
+	m_bRun = TRUE;
+	AfxBeginThread(ThreadWrite,(LPVOID)this);
+
+	return TRUE;
+OnStartWriteExit:
+	if(!strPromt.IsEmpty()) {
+		MessageBox(strPromt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_OK|MB_ICONERROR);
+	}
+	return FALSE;
+}
 void CWNpctoolDlg::OnSettingMode()
 {
 	// TODO: Add your command handler code here
+	m_ConfigModeDlg.UpdateInterface();
 	m_ConfigModeDlg.ShowWindow(SW_SHOW);
 }

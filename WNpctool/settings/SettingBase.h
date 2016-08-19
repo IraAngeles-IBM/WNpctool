@@ -12,15 +12,6 @@
 #define MASK_WV    2
 #define MASK_BASIC 3
 #define CALIB_CONFIG
-/********** FLAG_TYPE ***********/
-#define FLAG_SN                 0
-#define FLAG_MAC                1
-#define FLAG_WIFIMAC            1
-#define FLAG_BTMAC              2
-#define FLAG_IMEI1              3
-#define FLAG_IMEI2              4
-#define FLAG_CNT                5
-#define FLAG_AUTO               6
 
 #define FLAG_WVKEY 				0
 #define FLAG_WVFLG				1
@@ -172,15 +163,14 @@ public:
         strServer = strIP;
     }
 public:
-	//STRUCT_BASIC_CONFIG     basic;
-	STRUCT_SN_CONFIG        sn;
-	STRUCT_WIFI_CONFIG      wifi;
-	STRUCT_IMEI_CONFIG      imei;
 	STRUCT_MAC_CONFIG       WifiMac;
 	STRUCT_MAC_CONFIG       BtMac;
+	STRUCT_MAC_CONFIG       LanMac;
 	STRUCT_SN_CONFIG        devsn;
 	CFGPATH                 confPath;
 	LONG                    curFilePos[FLAG_CNT];
+	bool					bReadInfo;
+
     std::wstring szLan;
     bool         bDebug;
     int          nLogLevel;

@@ -258,6 +258,8 @@ dncryptpassword_exit:
 
 bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
 {
+	int nValue;
+	std::wstring strValue;
     szFileName  = strConfig;
     pIniFile    = new CIniFile;
     if(!pIniFile) return false;
@@ -289,18 +291,99 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
     strDataBaseName 		=GetStr(TEXT("DBName"));
     strPort         		=GetStr(TEXT("DBPort")); 
 
-    nSnType                 =_wtoi(GetStr(TEXT("SnType")).c_str());
-    if(2 <nSnType || 0 > nSnType )nSnType = 0;
+    //nSnType                 =_wtoi(GetStr(TEXT("SnType")).c_str());
+    //if(2 <nSnType || 0 > nSnType )nSnType = 0;
 
-    int nItemNum;
-    nItemNum = FLAG_WVCNT;
-    ParseStr(GetStr(TEXT("ItemMap")),strItemName,&nItemNum);
-    if( FLAG_WVCNT != nItemNum) {
-        return false;
-    }
-    strFlagBusy = FLAG_BUSY;
-    strFlagUnsd = FLAG_UNSD;
-    strFlagUsed = FLAG_USED;	
+    //int nItemNum;
+    //nItemNum = FLAG_WVCNT;
+    //ParseStr(GetStr(TEXT("ItemMap")),strItemName,&nItemNum);
+    //if( FLAG_WVCNT != nItemNum) {
+    //    return false;
+    //}
+    //strFlagBusy = FLAG_BUSY;
+    //strFlagUnsd = FLAG_UNSD;
+    //strFlagUsed = FLAG_USED;
+
+	strLogPath          = GetStr(TEXT("System:LogPath"));
+	bReadInfo			= _wtoi(GetStr(TEXT("READ")).c_str());
+	/********************** DevSn **********************/
+	devsn.bEnable		= _wtoi(GetStr(TEXT("DSWR")).c_str());
+	devsn.strPrefix		= GetStr(TEXT("DSPF"));
+	devsn.strSuffix		= GetStr(TEXT("DSSF"));
+
+	nValue				= _wtoi(GetStr(TEXT("DSAI")).c_str());
+	devsn.nAutoMode		= ((0 <= nValue)&&(3 >= nValue))?nValue:0;
+	devsn.strStartSn	= GetStr(TEXT("DSSS"));
+	devsn.strCurrentSn	= GetStr(TEXT("DSSC"));
+	devsn.strEndSn		= GetStr(TEXT("DSSD"));
+	nValue				= _wtoi(GetStr(TEXT("DSST")).c_str());
+	devsn.nSnCount		= (0 > nValue)?nValue:0;
+	nValue				= _wtoi(GetStr(TEXT("DSSR")).c_str());
+	devsn.nRemainCount	= (0 > nValue)?nValue:0;
+
+	/********************** WifiMac **********************/
+	WifiMac.bEnable			= _wtoi(GetStr(TEXT("WMWR")).c_str());
+	nValue					= _wtoi(GetStr(TEXT("WMST")).c_str());
+	WifiMac.nCount			= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("WMSR")).c_str());
+	WifiMac.nRemainCount	= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("WMAI")).c_str());
+	WifiMac.nAutoMode		= ((0 <= nValue)&&(3 >= nValue))?nValue:0;
+
+	WifiMac.strStartMac		= GetStr(TEXT("WMSS"));
+	WifiMac.strCurrentMac	= GetStr(TEXT("WMSC"));
+	WifiMac.strEndMac		= GetStr(TEXT("WMSD"));
+	nValue					= _wtoi(GetStr(TEXT("WMTP")).c_str());
+	WifiMac.dwType			= (( nValue <= 0)||(nValue >= 5))?4:nValue;
+
+	/*file*/
+	wsprintf(confPath.filePath[FLAG_WIFIMAC],GetStr(TEXT("WMFN")).c_str());
+	confPath.lFilePos[FLAG_WIFIMAC]	= _wtoi(GetStr(TEXT("WMFP")).c_str());
+	confPath.dwLineCnt[FLAG_WIFIMAC]= _wtoi(GetStr(TEXT("WMLC")).c_str());
+	confPath.dwLinePos[FLAG_WIFIMAC]= _wtoi(GetStr(TEXT("WMLP")).c_str());
+
+	/********************** BtMac **********************/
+	BtMac.bEnable			= _wtoi(GetStr(TEXT("BMWR")).c_str());
+	nValue					= _wtoi(GetStr(TEXT("BMST")).c_str());
+	BtMac.nCount			= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("BMSR")).c_str());
+	BtMac.nRemainCount		= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("BMAI")).c_str());
+	BtMac.nAutoMode			= ((0 <= nValue)&&(3 >= nValue))?nValue:0;
+
+	BtMac.strStartMac		= GetStr(TEXT("BMSS"));
+	BtMac.strCurrentMac		= GetStr(TEXT("BMSC"));
+	BtMac.strEndMac			= GetStr(TEXT("BMSD"));
+	nValue					= _wtoi(GetStr(TEXT("BMTP")).c_str());
+	BtMac.dwType			= (( nValue <= 0)||(nValue >= 5))?4:nValue;
+
+	/*file*/
+	wsprintf(confPath.filePath[FLAG_BTMAC],GetStr(TEXT("BMFN")).c_str());
+	confPath.lFilePos[FLAG_BTMAC]	= _wtoi(GetStr(TEXT("BMFP")).c_str());
+	confPath.dwLineCnt[FLAG_BTMAC]= _wtoi(GetStr(TEXT("BMLC")).c_str());
+	confPath.dwLinePos[FLAG_BTMAC]= _wtoi(GetStr(TEXT("BMLP")).c_str());	
+
+	/********************** LanMac **********************/
+	LanMac.bEnable			= _wtoi(GetStr(TEXT("LMWR")).c_str());
+	nValue					= _wtoi(GetStr(TEXT("LMST")).c_str());
+	LanMac.nCount			= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("LMSR")).c_str());
+	LanMac.nRemainCount		= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("LMAI")).c_str());
+	LanMac.nAutoMode			= ((0 <= nValue)&&(3 >= nValue))?nValue:0;
+
+	LanMac.strStartMac		= GetStr(TEXT("LMSS"));
+	LanMac.strCurrentMac	= GetStr(TEXT("LMSC"));
+	LanMac.strEndMac		= GetStr(TEXT("LMSD"));
+	nValue					= _wtoi(GetStr(TEXT("LMTP")).c_str());
+	LanMac.dwType			= (( nValue <= 0)||(nValue >= 5))?4:nValue;
+
+	/*file*/
+	wsprintf(confPath.filePath[FLAG_LANMAC],GetStr(TEXT("LMFN")).c_str());
+	confPath.lFilePos[FLAG_LANMAC]	= _wtoi(GetStr(TEXT("LMFP")).c_str());
+	confPath.dwLineCnt[FLAG_LANMAC]	= _wtoi(GetStr(TEXT("LMLC")).c_str());
+	confPath.dwLinePos[FLAG_LANMAC]	= _wtoi(GetStr(TEXT("LMLP")).c_str());	
+
     return true;
 
 }

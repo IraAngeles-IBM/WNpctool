@@ -26,6 +26,7 @@
 #define IDC_EDIT_BTMAC                  1009
 #define IDC_LIST2                       1010
 #define IDC_LIST_LOG                    1010
+#define IDC_LIST_INFO                   1010
 #define IDC_STATIC_STATUS               1011
 #define IDC_LABEL_DEVICE                1012
 #define IDC_TAB_SNMAC                   1013
@@ -106,6 +107,7 @@
 #define IDC_LABEL_BTMAC_FILE_PATH       1089
 #define IDC_EDIT_BTMAC_FILE_PATH        1090
 #define IDC_BUTTON_BTMAC_FILE_PATH      1091
+#define IDC_RADIO_FILE_SN               1092
 #define ID_SETTING                      32771
 #define ID_HELP32772                    32772
 #define ID_HELP_FOLDER                  32773
@@ -118,7 +120,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_COMMAND_VALUE         32776
-#define _APS_NEXT_CONTROL_VALUE         1092
+#define _APS_NEXT_CONTROL_VALUE         1093
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -192,6 +192,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cmfuns.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ConfigMode.cpp"
 				>
 			</File>
@@ -243,6 +247,10 @@
 			>
 			<File
 				RelativePath=".\BtMacDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\cmfuns.h"
 				>
 			</File>
 			<File

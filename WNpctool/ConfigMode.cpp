@@ -10,8 +10,8 @@
 
 IMPLEMENT_DYNAMIC(CConfigMode, CDialog)
 
-CConfigMode::CConfigMode(CWnd* pParent /*=NULL*/)
-	: CDialog(CConfigMode::IDD, pParent)
+CConfigMode::CConfigMode(CIniSettingBase &Config,CWnd* pParent /*=NULL*/)
+	: CDialog(CConfigMode::IDD, pParent),m_Configs(Config),m_SnDlg(m_Configs),m_WifiMacDlg(m_Configs),m_BtMacDlg(m_Configs),m_LanMacDlg(m_Configs)
 {
 
 }
@@ -68,6 +68,14 @@ BOOL CConfigMode::OnInitDialog()
 	//font.Detach();
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+VOID CConfigMode::UpdateInterface()
+{
+	m_SnDlg.UpdateInterface();
+	m_WifiMacDlg.UpdateInterface();
+	m_BtMacDlg.UpdateInterface();
+	m_LanMacDlg.UpdateInterface();
 }
 
 void CConfigMode::OnSizeCtl( int cx, int cy)

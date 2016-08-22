@@ -77,6 +77,8 @@ void CWNpctoolDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LABEL_DEVICE, m_lblDevice);
+	DDX_Control(pDX, IDC_LIST_INFO, m_listInfo);
+	DDX_Control(pDX, IDC_CB_DEVICES, m_CbDevice);
 }
 
 BEGIN_MESSAGE_MAP(CWNpctoolDlg, CDialog)
@@ -281,6 +283,15 @@ VOID CWNpctoolDlg::InitUi()
 			GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(TRUE);
 		}
 	}
+
+	m_CbDevice.AddString(_T("USB1"));
+	m_CbDevice.AddString(_T("USB2"));
+	//list
+	CRect rc;
+	m_listInfo.GetClientRect(rc);
+	m_listInfo.SetExtendedStyle(m_listInfo.GetExtendedStyle() |  LVS_EX_GRIDLINES |LVS_EX_FULLROWSELECT|LVS_EX_FULLROWSELECT);
+	m_listInfo.InsertColumn(0, _T("Time"), LVCFMT_CENTER, rc.Width()/4, 0);   
+	m_listInfo.InsertColumn(1, _T("Message"), LVCFMT_CENTER, 3*rc.Width()/4, 1);   
 }
 
 BOOL CWNpctoolDlg::LoadConfig()
@@ -304,6 +315,33 @@ BOOL CWNpctoolDlg::LoadConfig()
 		}
 		return FALSE;
 	}
+	strConfigPath = m_strModulePath + m_Configs.strLanPath.c_str();
+	if (m_Configs.nCurLan == 1)
+	{
+		strConfigPath = strConfigPath + m_Configs.strCnFilename.c_str();
+	}
+	else
+	{
+		strConfigPath = strConfigPath + m_Configs.strCnFilename.c_str();
+	}
+	if (!cmFile::IsExisted(strConfigPath))
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("Error:LoadConfig-->Language config PathFileExists failed."));
+		}
+		return FALSE;
+	}
+	bLoadConfig = m_LocalLan.LoadToolSetting(strConfigPath.GetString());
+	if (!bLoadConfig)
+	{
+		if (m_pLogObject)
+		{
+			m_pLogObject->Record(_T("LoadConfig-->Load Language file failed"));
+		}
+		return FALSE;
+	}
+	GetLocalString(TEXT("LANG:IDS_APPNAME"));
 	return TRUE;
 }
 void CWNpctoolDlg::OnLogFolder()
@@ -424,6 +462,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		if(!WriteItem(ITEM_SN))
 		{
 			m_pLogObject->Record(_T("Write SN failed."));
+			goto WriteProc_Exit;
 		}
 	}
 	//2.ÉÕÐ´wifimac
@@ -432,6 +471,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		if(!WriteItem(ITEM_WIFIMAC))
 		{
 			m_pLogObject->Record(_T("Write WifiMac failed."));
+			goto WriteProc_Exit;
 		}
 	}
 	//3.ÉÕÐ´btmac
@@ -440,6 +480,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		if(!WriteItem(ITEM_BTMAC))
 		{
 			m_pLogObject->Record(_T("Write BtMac failed."));
+			goto WriteProc_Exit;
 		}
 	}
 	//4.ÉÕÐ´lanmac
@@ -448,6 +489,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		if(!WriteItem(ITEM_LANMAC))
 		{
 			m_pLogObject->Record(_T("Write LanMac failed."));
+			goto WriteProc_Exit;
 		}
 	}
 	bSuccess = TRUE;
@@ -537,7 +579,7 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 	BOOL	bRet;
 	CString strID;
 	LPWSTR lpszValue=NULL;
-	int nSize,nID;
+	int nSize;
 	USHORT nBufSize;
 	BYTE buf[512];
 	nBufSize = 512;

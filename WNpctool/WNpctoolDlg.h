@@ -14,6 +14,7 @@ using namespace cm;
 #include "settings/SettingBase.h"
 #include "afxwin.h"
 #include "ConfigMode.h"
+#include "afxcmn.h"
 
 enum ENUM_WRITEITEM_ID{
 	ITEM_SN = 1,
@@ -43,7 +44,7 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 public:
 	CIniSettingBase m_Configs;
-	CIniLocalLan	m_Lan;
+	CIniLocalLan	m_LocalLan;
 	void ScanDeviceProc();
 	BOOL WriteProc();
 	BOOL ReadProc();
@@ -84,7 +85,7 @@ private:
 	BOOL	OnStartWrite();
 	std::wstring GetLocalString(std::wstring strKey)
 	{
-		return m_Lan.GetStr(strKey,TEXT(""));
+		return m_LocalLan.GetStr(strKey,TEXT(""));
 	}
 
 // 实现
@@ -104,4 +105,6 @@ public:
 	CStatic m_lblDevice;
 	afx_msg void OnBnClickedBtnWrite();
 	afx_msg void OnSettingMode();
+	CListCtrl m_listInfo;
+	CListBox m_CbDevice;
 };

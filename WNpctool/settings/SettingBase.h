@@ -1,7 +1,7 @@
 #ifndef _SETTINGBASE_H_
 #define _SETTINGBASE_H_
 #define USER_LOGIN
-#define APP_VER " V1.1.2"
+#define APP_VERSION " V1.1.0"
 #include "inifile.h"
 #include "../config.h"
 
@@ -171,8 +171,17 @@ public:
 	LONG                    curFilePos[FLAG_CNT];
 	bool					bReadInfo;
 
+	std::wstring			strLanPath;
+	int						nCurLan;
+	std::wstring			strCnFilename;
+	std::wstring			strEnFilename;
+	std::wstring			strCnFontName;
+	std::wstring			strEnFontName;
+	int						nCnFontSize;
+	int						nEnFontSize;
+    bool					bDebug;	
+
     std::wstring szLan;
-    bool         bDebug;
     int          nLogLevel;
     std::wstring strLogPath;
 
@@ -206,8 +215,11 @@ public:
 };
 class CIniLocalLan:public CSettingBase
 {
+private:
+    CIniSection  *pLanSec;
+    bool         bLanLoadOK;
 public:
-    CIniLocalLan()
+    CIniLocalLan():pLanSec(NULL),bLanLoadOK(false)
     {
     }
 	virtual ~CIniLocalLan()
@@ -227,6 +239,8 @@ public:
     virtual bool SetStr(std::wstring &key,std::wstring &value);
     virtual bool SetStr(const wchar_t *key,const wchar_t * value);
 
+
+    std::wstring GetLanStr(std::wstring key);
     void    SetListViewString(HWND pWnd,TCHAR *strKey);
     void    GetListViewString(HWND pWnd,TCHAR *strKey);
 public:

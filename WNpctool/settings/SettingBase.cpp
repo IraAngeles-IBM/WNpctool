@@ -303,8 +303,21 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
     //strFlagBusy = FLAG_BUSY;
     //strFlagUnsd = FLAG_UNSD;
     //strFlagUsed = FLAG_USED;
-
+	/********************** Language config **********************/
+	strLanPath			= GetStr(TEXT("Language:LangPath"));
+	nValue				= _wtoi(GetStr(TEXT("Selected")).c_str());
+	nCurLan				= ((1 <= nValue)&&(2 >= nValue))?nValue:1;
+	strCnFilename		= GetStr(TEXT("Lang1File"));
+	strEnFilename		= GetStr(TEXT("Lang2File"));
+	strCnFontName		= GetStr(TEXT("Lang1FontName"));
+	strEnFontName		= GetStr(TEXT("Lang2FontName"));
+	nValue				= _wtoi(GetStr(TEXT("Lang1FontSize")).c_str());
+	nCnFontSize			= (0 < nValue)?nValue:1;
+	nValue				= _wtoi(GetStr(TEXT("Lang2FontSize")).c_str());
+	nEnFontSize			= (0 < nValue)?nValue:1;
+	/********************** System config **********************/
 	strLogPath          = GetStr(TEXT("System:LogPath"));
+	bDebug              = 1 == _wtoi(GetStr(TEXT("Debug")).c_str());
 	bReadInfo			= _wtoi(GetStr(TEXT("READ")).c_str());
 	/********************** DevSn **********************/
 	devsn.bEnable		= _wtoi(GetStr(TEXT("DSWR")).c_str());
@@ -681,6 +694,7 @@ bool CIniLocalLan::LoadToolSetting(std::wstring strConfig)
         pIniFile = NULL;
         return false;
     }
+    bLanLoadOK = true;
     return true;
 }
 
@@ -777,6 +791,24 @@ bool CIniLocalLan::SetStr(std::wstring &key,std::wstring &value)
     pSec->SetKeyValue(szKey,value);
     return true;
 }
+std::wstring CIniLocalLan::GetLanStr(std::wstring key)
+{
+    std::wstring szSection;
+    std::wstring szKey;
+    if(true != bLanLoadOK) return key;
+    if(NULL == pIniFile) return TEXT("");
+    std::wstring::size_type npos = key.find_first_of(TEXT(":"));
+    if(npos != std::wstring::npos) {
+        szSection = key.substr(0,npos);
+        pLanSec = pIniFile->GetSection(szSection);
+        szKey   = key.substr(npos +1);
+    } else {
+        szKey = key;
+    }
+    if(NULL == pLanSec||key.empty())return TEXT("");
+    return pLanSec->GetKeyValue(szKey);
+
+}
 std::wstring CIniLocalLan::GetStr(const wchar_t *key)
 {
     return GetStr(std::wstring(key));
@@ -819,6 +851,7 @@ std::wstring CIniLocalLan::GetStr(std::wstring &key)
     }
     if(NULL == pSec||key.empty()) return TEXT("");
     if(pSec) return pSec->GetKeyValue(szKey);
+    return TEXT("");
 }
 
 static BOOL CALLBACK SetStringProc(HWND hwnd,LPARAM lParam )
@@ -834,6 +867,7 @@ void CIniLocalLan::TreeMenu(void * pParam,std::wstring strMainKeyPart)
     HMENU   pMenu = (HMENU)pParam;
     TCHAR   strKey[260];
     if(NULL == pMenu) return ;
+    if(true != bLanLoadOK) return ;
     for (int i=0;i < GetMenuItemCount(pMenu);i++) {
         swprintf(strKey,nof(strKey),TEXT("%s_%d"),strMainKeyPart.c_str(),i);
         int id = GetMenuItemID(pMenu,i);
@@ -861,7 +895,11 @@ bool CIniLocalLan::TreeControls(void * pParam,BOOL bSvae,int DlgId,bool bVer)
         bReturn = EnumChildWindows(hWnd,(WNDENUMPROC)::GetStringProc,(LPARAM)this);
         SaveToolSetting(TEXT(""));
     } else {
-        std::wstring  strTitle = GetStr( strSection) + (bVer?TEXT(APP_VER):TEXT(""));
+        if(true != bLanLoadOK) return false;
+        std::wstring  strTitle = GetStr( strSection);
+        if(bVer) {
+            strTitle = GetLanStr(TEXT("LANG:IDS_TEXT_APPNAME")) + TEXT(APP_VERSION);
+        }
         SetWindowText(hWnd,strTitle.c_str());
         bReturn = EnumChildWindows(hWnd,(WNDENUMPROC)::SetStringProc,(LPARAM)this);
     }

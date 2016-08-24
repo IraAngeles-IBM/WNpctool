@@ -540,7 +540,11 @@ void CWNpctoolDlg::OnClose()
 
 BOOL CWNpctoolDlg::WriteProc()
 {
-	BOOL bSuccess=FALSE;
+	BOOL			bSuccess=FALSE;
+	bool            bskip_force_wifimac = FALSE;
+	bool            bskip_force_btmac   = FALSE;
+	bool            bskip_force_devsn   = FALSE;
+	bool            bskip_force_lanmac  = FALSE;
 	CString         strPrompt;
 
 	if (m_listInfo.GetCount()>0) {
@@ -563,8 +567,9 @@ BOOL CWNpctoolDlg::WriteProc()
 			AddPrompt(GetLocalString(_T("IDS_ERROR_SN_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
+		AddPrompt(GetLocalString(_T("IDS_INFO_SN_PASS")).c_str(),LIST_INFO);
 	}
-	AddPrompt(GetLocalString(_T("IDS_INFO_SN_PASS")).c_str(),LIST_INFO);
+	
 	//2.…’–¥wifimac
 	if (m_bUserStop) {
 		goto WriteProc_Exit;
@@ -580,8 +585,9 @@ BOOL CWNpctoolDlg::WriteProc()
 			AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
+		AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_PASS")).c_str(),LIST_INFO);
 	}
-	AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_PASS")).c_str(),LIST_INFO);
+	
 	//3.…’–¥btmac
 	if (m_bUserStop) {
 		goto WriteProc_Exit;
@@ -597,8 +603,9 @@ BOOL CWNpctoolDlg::WriteProc()
 			AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
+		AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_PASS")).c_str(),LIST_INFO);
 	}
-	AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_PASS")).c_str(),LIST_INFO);
+	
 	//4.…’–¥lanmac
 	if (m_bUserStop) {
 		goto WriteProc_Exit;
@@ -614,11 +621,18 @@ BOOL CWNpctoolDlg::WriteProc()
 			AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
+		AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_PASS")).c_str(),LIST_INFO);
 	}
-	AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_PASS")).c_str(),LIST_INFO);
+	
 	bSuccess = TRUE;
 WriteProc_Exit:
 	m_bRun = FALSE;
+	if(!m_bUserStop){
+		SaveWriteResultOnPass(bSuccess,((bskip_force_devsn)  ?0:FIELD_DEVSN  )|
+			((bskip_force_wifimac)?0:FIELD_WIFIMAC)|
+			((bskip_force_btmac)  ?0:FIELD_BTMAC  )|
+			((bskip_force_lanmac)  ?0:FIELD_LANMAC));
+	}
 	//EnableCtrl();
 	if (m_bUserStop) {
 		strPrompt.Format(GetLocalString(_T("IDS_INFO_USER_ABORT")).c_str());
@@ -820,6 +834,151 @@ Exit_Read:
 		MessageBox(_T("Reading Failed."),_T("Error"),MB_OK|MB_ICONERROR);
 	return bSuccess;
 }
+BOOL CWNpctoolDlg::SaveWriteResultOnPass(BOOL bPass,DWORD mask)
+{
+	CString     strTmp;
+	BOOL        inc;
+	DWORD       dwIfiInc;
+	dwIfiInc    = 1;
+
+	/*basic **/
+	//m_Configs.basic.dwTotal ++;
+	//if(bPass) {
+	//	m_Configs.basic.dwPass ++;
+	//}
+	if(!bPass )goto swrop_exit;
+
+	/*snw **/
+	if(m_Configs.devsn.bEnable) {
+		if (FIELD_DEVSN&mask) {
+			if(MODE_AUTO == m_Configs.devsn.nAutoMode) {
+				inc = TRUE;
+				//if (m_Configs.devsn.nRemainCount!=-1) { /*-1 means no limit*/
+				//                m_Configs.devsn.nRemainCount--;
+				//                if (m_Configs.devsn.nRemainCount==0) {
+				//                    m_Configs.devsn.strCurrentSn = _T("");
+				//                    inc = FALSE;
+				//                }
+				//}
+				if (m_Configs.devsn.nRemainCount!=0&&m_Configs.devsn.nRemainCount!=-1)
+				{
+					m_Configs.devsn.nRemainCount--;
+				}
+				if(inc) {
+					m_Configs.devsn.strCurrentSn = m_Configs.devsn.strCurrentSn.substr(m_Configs.devsn.strPrefix.length());
+					strTmp = m_Configs.devsn.strCurrentSn.substr(0,m_Configs.devsn.strCurrentSn.length()-m_Configs.devsn.strSuffix.length()).c_str();
+					if (m_Configs.devsn.bHexCarry) {
+						HexStrIncreaseSkipAlpha(strTmp.GetBuffer());
+						m_Configs.devsn.strCurrentSn = strTmp.GetString();
+						strTmp.ReleaseBuffer();
+					} else {
+						IntStrIncreaseSkipAlpha(strTmp.GetBuffer());
+						m_Configs.devsn.strCurrentSn = strTmp.GetString();
+						strTmp.ReleaseBuffer();
+					}
+					//strTmp = m_Configs.devsn.strPrefix + m_Configs.devsn.strCurrentSn + m_Configs.devsn.strSuffix;
+					m_Configs.devsn.strCurrentSn = m_Configs.devsn.strPrefix + m_Configs.devsn.strCurrentSn + m_Configs.devsn.strSuffix;
+				}
+			}
+		}
+	}
+	if(m_Configs.WifiMac.bEnable) {
+		if (FIELD_WIFIMAC&mask) {
+			if(MODE_AUTO == m_Configs.WifiMac.nAutoMode) {
+				//unsigned short mac0 = chartohex((LPCTSTR)m_Configs.WifiMac.strCurrentMac,2);
+				//if( mac0& 0x2 ) { /*LOCAL_ADMIN**/
+				//	dwIfiInc = 4;
+				//} else {            /*GLOBAL_UNIQUE**/ 
+				//	dwIfiInc = 1;
+				//}
+				dwIfiInc = 1;
+				inc              = TRUE;
+				//if (m_Configs.WifiMac.nRemainCount!=-1) { /*-1 means no limit*/
+				//    m_Configs.WifiMac.nRemainCount -= dwIfiInc;
+				//    if (m_Configs.WifiMac.nRemainCount < dwIfiInc ) {
+				//        m_Configs.WifiMac.strCurrentMac = _T("");
+				//        inc = FALSE;
+				//    }
+				//}
+				if (m_Configs.WifiMac.nRemainCount!=0&&m_Configs.WifiMac.nRemainCount!=-1) { /*-1 means no limit*/
+					m_Configs.WifiMac.nRemainCount--;
+				}
+				if(inc) {
+					strTmp = m_Configs.WifiMac.strCurrentMac.c_str();
+					HexStrIncrease(strTmp.GetBuffer(),dwIfiInc); /*Intel wifi mac occupy four**/
+					m_Configs.WifiMac.strCurrentMac = strTmp.GetString();
+					strTmp.ReleaseBuffer();
+				}
+			}
+			if (MODE_FILE == m_Configs.WifiMac.nAutoMode)
+			{
+				m_Configs.confPath.lFilePos[FLAG_WIFIMAC] = m_Configs.curFilePos[FLAG_WIFIMAC];
+				m_Configs.confPath.dwLinePos[FLAG_WIFIMAC] ++;  //just inccrease when get a correct item
+			}
+		}
+	}
+	if(m_Configs.BtMac.bEnable) {
+		if (FIELD_BTMAC&mask)  {
+			if(MODE_AUTO == m_Configs.BtMac.nAutoMode) {
+				inc = TRUE;
+				//if (m_Configs.BtMac.nRemainCount!=-1) { /*-1 means no limit*/
+				//    m_Configs.BtMac.nRemainCount--;
+				//    if (m_Configs.BtMac.nRemainCount == 0) {
+				//        m_Configs.BtMac.strCurrentMac = _T("");
+				//        inc = FALSE;
+				//    } 
+				//}
+				if (m_Configs.BtMac.nRemainCount!=0&&m_Configs.BtMac.nRemainCount!=-1) { /*-1 means no limit*/
+					m_Configs.BtMac.nRemainCount--;
+				}
+				if(inc) {
+					strTmp = m_Configs.BtMac.strCurrentMac.c_str();
+					HexStrIncrease(strTmp.GetBuffer());
+					m_Configs.BtMac.strCurrentMac = strTmp.GetString();
+					strTmp.ReleaseBuffer();
+				}
+			}
+			if (MODE_FILE == m_Configs.BtMac.nAutoMode)
+			{
+				m_Configs.confPath.lFilePos[FLAG_BTMAC] = m_Configs.curFilePos[FLAG_BTMAC];
+				m_Configs.confPath.dwLinePos[FLAG_BTMAC] ++;  //just inccrease when get a correct item
+			}
+		}
+	}
+
+	if(m_Configs.LanMac.bEnable) {
+		if (FIELD_LANMAC&mask)  {
+			if(MODE_AUTO == m_Configs.LanMac.nAutoMode) {
+				inc = TRUE;
+				//if (m_Configs.BtMac.nRemainCount!=-1) { /*-1 means no limit*/
+				//    m_Configs.BtMac.nRemainCount--;
+				//    if (m_Configs.BtMac.nRemainCount == 0) {
+				//        m_Configs.BtMac.strCurrentMac = _T("");
+				//        inc = FALSE;
+				//    } 
+				//}
+				if (m_Configs.LanMac.nRemainCount!=0&&m_Configs.LanMac.nRemainCount!=-1) { /*-1 means no limit*/
+					m_Configs.LanMac.nRemainCount--;
+				}
+				if(inc) {
+					strTmp = m_Configs.LanMac.strCurrentMac.c_str();
+					HexStrIncrease(strTmp.GetBuffer());
+					m_Configs.LanMac.strCurrentMac = strTmp.GetString();
+					strTmp.ReleaseBuffer();
+				}
+			}
+			if (MODE_FILE == m_Configs.LanMac.nAutoMode)
+			{
+				m_Configs.confPath.lFilePos[FLAG_LANMAC] = m_Configs.curFilePos[FLAG_LANMAC];
+				m_Configs.confPath.dwLinePos[FLAG_LANMAC] ++;  //just inccrease when get a correct item
+			}
+		}
+	}
+
+swrop_exit:
+	m_Configs.SaveToolSetting(std::wstring(TEXT("")));
+	return TRUE;
+}
 void CWNpctoolDlg::OnBnClickedBtnWrite()
 {
 	// TODO: Add your control notification handler code here
@@ -926,8 +1085,16 @@ BOOL CWNpctoolDlg::OnStartWrite()
 		}
 		else if (MODE_AUTO == m_Configs.devsn.nAutoMode)
 		{
-			m_strCurDevSn = m_Configs.devsn.strCurrentSn.c_str();
-			SetDlgItemText(IDC_EDIT_SN,m_strCurDevSn);
+			if (m_Configs.devsn.nRemainCount > 0)
+			{
+				m_strCurDevSn = m_Configs.devsn.strCurrentSn.c_str();
+				SetDlgItemText(IDC_EDIT_SN,m_strCurDevSn);
+			}
+			else
+			{
+				strPromt = GetLocalString(_T("IDS_ERROR_OUT_OF_DEVSN")).c_str();
+				goto OnStartWriteExit;
+			}
 		}
 		else
 		{
@@ -1003,7 +1170,7 @@ BOOL CWNpctoolDlg::OnStartWrite()
 			m_strCurLanMac = m_Configs.LanMac.strCurrentMac.c_str();
 			SetDlgItemText(IDC_EDIT_LANMAC,m_strCurLanMac);
 			if (m_strCurLanMac.IsEmpty()||m_Configs.LanMac.nRemainCount==0) {
-				strPromt = GetLocalString(_T("IDS_ERROR_OUT_OF_BTMAC")).c_str();
+				strPromt = GetLocalString(_T("IDS_ERROR_OUT_OF_LANMAC")).c_str();
 				goto OnStartWriteExit;
 			}
 		}

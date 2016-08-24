@@ -30,6 +30,8 @@ void CWifiMacDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CWifiMacDlg, CDialog)
 	ON_BN_CLICKED(IDC_RADIO_MANUAL_WIFIMAC, &CWifiMacDlg::OnBnClickedRadioManualWifimac)
 	ON_BN_CLICKED(IDC_RADIO_AUTO_WIFIMAC, &CWifiMacDlg::OnBnClickedRadioAutoWifimac)
+	ON_BN_CLICKED(IDC_CHECK_WIFIMAC_SELECT, &CWifiMacDlg::OnBnClickedCheckWifimacSelect)
+	ON_EN_SETFOCUS(IDC_EDIT_WIFIMAC_SEGMENT_COUNT, &CWifiMacDlg::OnEnSetfocusEditWifimacSegmentCount)
 END_MESSAGE_MAP()
 
 
@@ -86,14 +88,24 @@ void CWifiMacDlg::OnBnClickedRadioManualWifimac()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.WifiMac.nAutoMode = MODE_MANUAL;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_START)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_CURRENT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_END)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_COUNT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_WIFIMAC_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 
 void CWifiMacDlg::OnBnClickedRadioAutoWifimac()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.WifiMac.nAutoMode = MODE_AUTO;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_START)->EnableWindow(m_Configs.WifiMac.bEnable);
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_CURRENT)->EnableWindow(m_Configs.WifiMac.bEnable);
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_END)->EnableWindow(m_Configs.WifiMac.bEnable);
+	GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_COUNT)->EnableWindow(m_Configs.WifiMac.bEnable);
+	GetDlgItem(IDC_BUTTON_WIFIMAC_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 BOOL CWifiMacDlg::OnSaveConfig()
 {
@@ -159,4 +171,23 @@ bool CWifiMacDlg::CompareNumString(CString strMore,CString strLess)
 		return false;
 	}
 	return true;
+}
+void CWifiMacDlg::OnBnClickedCheckWifimacSelect()
+{
+	// TODO: Add your control notification handler code here
+	m_Configs.WifiMac.bEnable = !m_Configs.WifiMac.bEnable;
+	UpdateInterface();
+}
+
+void CWifiMacDlg::OnEnSetfocusEditWifimacSegmentCount()
+{
+	// TODO: Add your control notification handler code here
+	CString strStartMac,strCurrentMac,strEndMac,strPrompt;
+	int nCount;
+	GetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_START,strStartMac);
+	GetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_CURRENT,strCurrentMac);
+	GetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_END,strEndMac);
+
+	nCount = cmNumString::StrToSLong(strEndMac.Right(6),16) - cmNumString::StrToSLong(strCurrentMac.Right(6),16) + 1;
+	SetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
 }

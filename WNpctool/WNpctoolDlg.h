@@ -28,6 +28,12 @@ using namespace cm;
 #define LIST_WARN 2
 #define LIST_ERR  3
 
+#define FIELD_DEVSN     1
+#define FIELD_WIFIMAC   2
+#define FIELD_BTMAC		4
+#define FIELD_LANMAC    8
+#define FIELD_ALL      16
+
 enum ENUM_WRITEITEM_ID{
 	ITEM_SN = 1,
 	ITEM_WIFIMAC,
@@ -102,6 +108,7 @@ private:
 	HBITMAP         m_hRedLedBitmap;
 	//CConfigMode m_ConfigModeDlg;
 
+	BOOL    SaveWriteResultOnPass(BOOL,DWORD);
 	BOOL	LoadConfig();
 	VOID	InitUi();
 	BOOL	OnStartRead();

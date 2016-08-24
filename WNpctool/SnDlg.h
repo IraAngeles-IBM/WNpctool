@@ -31,4 +31,6 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedRadioManualDevsn();
 	afx_msg void OnBnClickedRadioAutoDevsn();
+	afx_msg void OnBnClickedCheckSnSelect();
+	afx_msg void OnEnSetfocusEditDevsnSegmentCount();
 };

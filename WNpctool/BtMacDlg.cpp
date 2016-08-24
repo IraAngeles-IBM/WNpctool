@@ -30,6 +30,8 @@ void CBtMacDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CBtMacDlg, CDialog)
 	ON_BN_CLICKED(IDC_RADIO_MANUAL_BTMAC, &CBtMacDlg::OnBnClickedRadioManualBtmac)
 	ON_BN_CLICKED(IDC_RADIO_AUTO_BTMAC, &CBtMacDlg::OnBnClickedRadioAutoBtmac)
+	ON_BN_CLICKED(IDC_CHECK_BTMAC_SELECT, &CBtMacDlg::OnBnClickedCheckBtmacSelect)
+	ON_EN_SETFOCUS(IDC_EDIT_BTMAC_SEGMENT_COUNT, &CBtMacDlg::OnEnSetfocusEditBtmacSegmentCount)
 END_MESSAGE_MAP()
 
 
@@ -87,14 +89,24 @@ void CBtMacDlg::OnBnClickedRadioManualBtmac()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.BtMac.nAutoMode = MODE_MANUAL;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_START)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_CURRENT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_END)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_COUNT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_BTMAC_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 
 void CBtMacDlg::OnBnClickedRadioAutoBtmac()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.BtMac.nAutoMode = MODE_AUTO;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_START)->EnableWindow(m_Configs.BtMac.bEnable);
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_CURRENT)->EnableWindow(m_Configs.BtMac.bEnable);
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_END)->EnableWindow(m_Configs.BtMac.bEnable);
+	GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_COUNT)->EnableWindow(m_Configs.BtMac.bEnable);
+	GetDlgItem(IDC_BUTTON_BTMAC_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 BOOL CBtMacDlg::OnSaveConfig()
 {
@@ -160,4 +172,23 @@ bool CBtMacDlg::CompareNumString(CString strMore,CString strLess)
 		return false;
 	}
 	return true;
+}
+void CBtMacDlg::OnBnClickedCheckBtmacSelect()
+{
+	// TODO: Add your control notification handler code here
+	m_Configs.BtMac.bEnable = !m_Configs.BtMac.bEnable;
+	UpdateInterface();
+}
+
+void CBtMacDlg::OnEnSetfocusEditBtmacSegmentCount()
+{
+	// TODO: Add your control notification handler code here
+	CString strStartMac,strCurrentMac,strEndMac,strPrompt;
+	int nCount;
+	GetDlgItemText(IDC_EDIT_BTMAC_SEGMENT_START,strStartMac);
+	GetDlgItemText(IDC_EDIT_BTMAC_SEGMENT_CURRENT,strCurrentMac);
+	GetDlgItemText(IDC_EDIT_BTMAC_SEGMENT_END,strEndMac);
+
+	nCount = cmNumString::StrToSLong(strEndMac.Right(6),16) - cmNumString::StrToSLong(strCurrentMac.Right(6),16) + 1;
+	SetDlgItemText(IDC_EDIT_BTMAC_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
 }

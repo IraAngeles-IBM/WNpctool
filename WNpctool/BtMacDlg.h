@@ -30,4 +30,6 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedRadioManualBtmac();
 	afx_msg void OnBnClickedRadioAutoBtmac();
+	afx_msg void OnBnClickedCheckBtmacSelect();
+	afx_msg void OnEnSetfocusEditBtmacSegmentCount();
 };

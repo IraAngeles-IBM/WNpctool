@@ -94,6 +94,18 @@ void CConfigMode::OnSizeCtl( int cx, int cy)
 void CConfigMode::OnBnClickedBtnModeApply()
 {
 	// TODO: Add your control notification handler code here
+	if(!m_SnDlg.OnSaveConfig()) {
+		return ;
+	}
+	if(!m_WifiMacDlg.OnSaveConfig()) {
+		return ;
+	}
+	if(!m_BtMacDlg.OnSaveConfig()) {
+		return ;
+	}
+	if(!m_LanMacDlg.OnSaveConfig()) {
+		return ;
+	}
 }
 
 void CConfigMode::OnBnClickedBtnModeOk()

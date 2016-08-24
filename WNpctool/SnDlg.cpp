@@ -31,6 +31,8 @@ void CSnDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CSnDlg, CDialog)
 	ON_BN_CLICKED(IDC_RADIO_MANUAL_DEVSN, &CSnDlg::OnBnClickedRadioManualDevsn)
 	ON_BN_CLICKED(IDC_RADIO_AUTO_DEVSN, &CSnDlg::OnBnClickedRadioAutoDevsn)
+	ON_BN_CLICKED(IDC_CHECK_SN_SELECT, &CSnDlg::OnBnClickedCheckSnSelect)
+	ON_EN_SETFOCUS(IDC_EDIT_DEVSN_SEGMENT_COUNT, &CSnDlg::OnEnSetfocusEditDevsnSegmentCount)
 END_MESSAGE_MAP()
 
 
@@ -97,14 +99,29 @@ void CSnDlg::OnBnClickedRadioManualDevsn()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.devsn.nAutoMode = MODE_MANUAL;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_DEVSN_PREFIX)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_DEVSN_SUFFIX)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_START)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_CURRENT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_END)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_COUNT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_DEVSN_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 
 void CSnDlg::OnBnClickedRadioAutoDevsn()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.devsn.nAutoMode = MODE_AUTO;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_DEVSN_PREFIX)->EnableWindow(m_Configs.devsn.bEnable);
+	GetDlgItem(IDC_EDIT_DEVSN_SUFFIX)->EnableWindow(m_Configs.devsn.bEnable);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_START)->EnableWindow(m_Configs.devsn.bEnable);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_CURRENT)->EnableWindow(m_Configs.devsn.bEnable);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_END)->EnableWindow(m_Configs.devsn.bEnable);
+	GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_COUNT)->EnableWindow(m_Configs.devsn.bEnable);
+	GetDlgItem(IDC_EDIT_DEVSN_FILE_PATH)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_DEVSN_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 BOOL CSnDlg::OnSaveConfig()
 {
@@ -137,14 +154,14 @@ BOOL CSnDlg::OnSaveConfig()
 			m_Configs.devsn.strEndSn = strValue;
 			GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_CURRENT,strValue);
 			m_Configs.devsn.strCurrentSn = strValue;
-			//if (!(CompareNumString(m_Configs.devsn.strEndSn.c_str(),m_Configs.devsn.strCurrentSn.c_str())&&
-			//	CompareNumString(m_Configs.devsn.strCurrentSn.c_str(),m_Configs.devsn.strStartSn.c_str())&&
-			//	CompareNumString(m_Configs.devsn.strEndSn.c_str(),m_Configs.devsn.strStartSn.c_str())))
-			//{
-			//	strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("WIFI MAC"));
-			//	MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
-			//	return bResult;					
-			//}
+			if (!(CompareNumString(m_Configs.devsn.strEndSn.c_str(),m_Configs.devsn.strCurrentSn.c_str())&&
+				CompareNumString(m_Configs.devsn.strCurrentSn.c_str(),m_Configs.devsn.strStartSn.c_str())&&
+				CompareNumString(m_Configs.devsn.strEndSn.c_str(),m_Configs.devsn.strStartSn.c_str())))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT")).c_str(),TEXT("DEV SN"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				return bResult;					
+			}
 			strValue = m_Configs.devsn.strEndSn.c_str();
 			strValue2 = m_Configs.devsn.strCurrentSn.c_str();
 			m_Configs.devsn.nRemainCount    = cmNumString::StrToSLong(strValue.Right(6),16) - cmNumString::StrToSLong(strValue2.Right(6),16) + 1;
@@ -176,4 +193,23 @@ bool CSnDlg::CompareNumString(CString strMore,CString strLess)
 		return false;
 	}
 	return true;
+}
+void CSnDlg::OnBnClickedCheckSnSelect()
+{
+	// TODO: Add your control notification handler code here
+	m_Configs.devsn.bEnable = !m_Configs.devsn.bEnable;
+	UpdateInterface();
+}
+
+void CSnDlg::OnEnSetfocusEditDevsnSegmentCount()
+{
+	// TODO: Add your control notification handler code here
+	CString strStartSN,strCurrentSN,strEndSN,strPrompt;
+	int nCount;
+	GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_START,strStartSN);
+	GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_CURRENT,strStartSN);
+	GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_END,strEndSN);
+
+	nCount = cmNumString::StrToSLong(strEndSN.Right(6),16) - cmNumString::StrToSLong(strStartSN.Right(6),16) + 1;
+	SetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
 }

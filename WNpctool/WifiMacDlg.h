@@ -31,4 +31,6 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedRadioManualWifimac();
 	afx_msg void OnBnClickedRadioAutoWifimac();
+	afx_msg void OnBnClickedCheckWifimacSelect();
+	afx_msg void OnEnSetfocusEditWifimacSegmentCount();
 };

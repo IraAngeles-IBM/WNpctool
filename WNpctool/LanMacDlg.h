@@ -31,4 +31,6 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedRadioManualLanmac();
 	afx_msg void OnBnClickedRadioAutoLanmac();
+	afx_msg void OnBnClickedCheckLanmacSelect();
+	afx_msg void OnEnSetfocusEditLanmacSegmentCount();
 };

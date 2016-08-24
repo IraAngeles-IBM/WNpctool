@@ -30,6 +30,8 @@ void CLanMacDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CLanMacDlg, CDialog)
 	ON_BN_CLICKED(IDC_RADIO_MANUAL_LANMAC, &CLanMacDlg::OnBnClickedRadioManualLanmac)
 	ON_BN_CLICKED(IDC_RADIO_AUTO_LANMAC, &CLanMacDlg::OnBnClickedRadioAutoLanmac)
+	ON_BN_CLICKED(IDC_CHECK_LANMAC_SELECT, &CLanMacDlg::OnBnClickedCheckLanmacSelect)
+	ON_EN_SETFOCUS(IDC_EDIT_LANMAC_SEGMENT_COUNT, &CLanMacDlg::OnEnSetfocusEditLanmacSegmentCount)
 END_MESSAGE_MAP()
 
 
@@ -86,14 +88,24 @@ void CLanMacDlg::OnBnClickedRadioManualLanmac()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.LanMac.nAutoMode = MODE_MANUAL;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_START)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_CURRENT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_END)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_COUNT)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_LANMAC_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 
 void CLanMacDlg::OnBnClickedRadioAutoLanmac()
 {
 	// TODO: Add your control notification handler code here
 	m_Configs.LanMac.nAutoMode = MODE_AUTO;
-	UpdateInterface();
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_START)->EnableWindow(m_Configs.LanMac.bEnable);
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_CURRENT)->EnableWindow(m_Configs.LanMac.bEnable);
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_END)->EnableWindow(m_Configs.LanMac.bEnable);
+	GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_COUNT)->EnableWindow(m_Configs.LanMac.bEnable);
+	GetDlgItem(IDC_BUTTON_LANMAC_FILE_PATH)->EnableWindow(FALSE);
+	//UpdateInterface();
 }
 BOOL CLanMacDlg::OnSaveConfig()
 {
@@ -160,4 +172,23 @@ bool CLanMacDlg::CompareNumString(CString strMore,CString strLess)
 		return false;
 	}
 	return true;
+}
+void CLanMacDlg::OnBnClickedCheckLanmacSelect()
+{
+	// TODO: Add your control notification handler code here
+	m_Configs.LanMac.bEnable = !m_Configs.LanMac.bEnable;
+	UpdateInterface();
+}
+
+void CLanMacDlg::OnEnSetfocusEditLanmacSegmentCount()
+{
+	// TODO: Add your control notification handler code here
+	CString strStartMac,strCurrentMac,strEndMac,strPrompt;
+	int nCount;
+	GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_START,strStartMac);
+	GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_CURRENT,strCurrentMac);
+	GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_END,strEndMac);
+
+	nCount = cmNumString::StrToSLong(strEndMac.Right(6),16) - cmNumString::StrToSLong(strCurrentMac.Right(6),16) + 1;
+	SetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
 }

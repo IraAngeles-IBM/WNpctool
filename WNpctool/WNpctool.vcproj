@@ -300,6 +300,14 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\res\green_led.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\res\red_led.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\res\WNpctool.ico"
 				>
 			</File>
@@ -337,6 +345,26 @@
 			</File>
 			<File
 				RelativePath=".\settings\SettingBase.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="XListBox"
+			>
+			<File
+				RelativePath=".\XListBox\Clipboard.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\XListBox\Clipboard.h"
+				>
+			</File>
+			<File
+				RelativePath=".\XListBox\XListBox.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\XListBox\XListBox.h"
 				>
 			</File>
 		</Filter>

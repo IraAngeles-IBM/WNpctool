@@ -67,7 +67,7 @@ END_MESSAGE_MAP()
 
 
 CWNpctoolDlg::CWNpctoolDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CWNpctoolDlg::IDD, pParent),m_ConfigModeDlg(m_Configs),
+	: CDialog(CWNpctoolDlg::IDD, pParent)/*,m_ConfigModeDlg(m_Configs,m_LocalLan)*/,
 	m_bStarWrite(FALSE),m_bStarRead(FALSE),m_pWriteThread(NULL),m_pReadThread(NULL)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
@@ -77,8 +77,7 @@ void CWNpctoolDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LABEL_DEVICE, m_lblDevice);
-	DDX_Control(pDX, IDC_LIST_INFO, m_listInfo);
-	DDX_Control(pDX, IDC_CB_DEVICES, m_CbDevice);
+	DDX_Control(pDX, IDC_LIST_REPORT, m_listInfo);
 }
 
 BEGIN_MESSAGE_MAP(CWNpctoolDlg, CDialog)
@@ -86,6 +85,7 @@ BEGIN_MESSAGE_MAP(CWNpctoolDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
+	ON_MESSAGE(WM_UPDATE_MSG,&CWNpctoolDlg::OnHandleUpdateMsg)
 	ON_COMMAND(ID_LOG_FOLDER, &CWNpctoolDlg::OnLogFolder)
 	ON_BN_CLICKED(ID_BTN_WRITE, &CWNpctoolDlg::OnBnClickedBtnWrite)
 	ON_COMMAND(ID_SETTING_MODE, &CWNpctoolDlg::OnSettingMode)
@@ -130,8 +130,12 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	m_pWriteThread      = NULL;
 	m_pReadThread       = NULL;
 
-	m_ConfigModeDlg.Create(IDD_DIALOG_MODE);
+	//m_ConfigModeDlg.Create(IDD_DIALOG_MODE);
 
+	m_bRedLedLight      = TRUE;
+	m_hGreenLedBitmap   = m_hRedLedBitmap = NULL;
+	m_hRedLedBitmap     = LoadBitmap(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDB_BMP_REDLED));
+	m_hGreenLedBitmap   = LoadBitmap(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDB_BMP_GREENLED));
 	m_strModulePath     = cmPath::GetModulePath();
 	m_strLogPath = m_strModulePath + _T("Log\\");
 
@@ -140,22 +144,6 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	{
 		CreateDirectory(m_strLogPath,NULL);
 	}
-
-	BOOL bRet;
-	m_pLogObject = new cmLog(m_strLogPath,bRet);
-	if (bRet)
-	{
-		m_pLogObject->LogFileName = _T("AppLog");
-	}
-	else
-	{
-		if (m_pLogObject)
-		{
-			delete m_pLogObject;
-			m_pLogObject = NULL;
-		}
-	}
-
 
 	m_bUpgradeDllInitOK = FALSE;
 	m_bTerminated = FALSE;
@@ -196,6 +184,24 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	} else {
 		MessageBox(_T("Loading config file failed!"),_T("ERROR"),MB_ICONERROR|MB_OK);
 		exit(-1);
+	}
+	if (m_Configs.strLogPath.empty())
+	{
+		m_Configs.strLogPath=m_strModulePath + _T("Log\\");
+	}
+	BOOL bRet;
+	m_pLogObject = new cmLog(m_strLogPath,bRet);
+	if (bRet)
+	{
+		m_pLogObject->LogFileName = _T("AppLog");
+	}
+	else
+	{
+		if (m_pLogObject)
+		{
+			delete m_pLogObject;
+			m_pLogObject = NULL;
+		}
 	}
 	InitUi();
 
@@ -241,6 +247,35 @@ void CWNpctoolDlg::OnPaint()
 	}
 	else
 	{
+		CPaintDC dc(this); // device context for painting
+		HBITMAP hLedBitmap;
+		if (m_bRedLedLight)
+		{
+			hLedBitmap = m_hRedLedBitmap;
+		}
+		else
+			hLedBitmap = m_hGreenLedBitmap;
+		// TODO: Add your message handler code here
+		if (hLedBitmap)
+		{
+			CPaintDC dc(GetDlgItem(IDC_PICTURE_DEVICE));
+			CDC ImageDC;
+			ImageDC.CreateCompatibleDC(&dc);
+			HGDIOBJ hOldGdiObject;
+			hOldGdiObject = ImageDC.SelectObject(hLedBitmap);
+			int nDstWidth,nDstHeight;
+			RECT dstClientRect;
+			dc.GetWindow()->GetClientRect(&dstClientRect);
+			nDstHeight = dstClientRect.bottom - dstClientRect.top;
+			nDstWidth = dstClientRect.right-dstClientRect.left;
+			BITMAP bmpStruct;
+			BOOL bRet;
+			GetObject(hLedBitmap,sizeof(BITMAP),&bmpStruct);
+
+			bRet = TransparentBlt(dc.m_hDC, 0, 0, nDstWidth, nDstHeight, ImageDC.m_hDC, 0, 0, bmpStruct.bmWidth, bmpStruct.bmHeight, RGB(255,255,255));
+			ImageDC.SelectObject(hOldGdiObject);
+		}
+
 		CDialog::OnPaint();
 	}
 }
@@ -254,15 +289,17 @@ HCURSOR CWNpctoolDlg::OnQueryDragIcon()
 
 VOID CWNpctoolDlg::InitUi()
 {
+	CFont font;
+
 	GetDlgItem(IDC_EDIT_SN)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_WIFIMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_BTMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(FALSE);
-	GetDlgItem(ID_BTN_WRITE)->SetWindowText(_T("读取"));
+	GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
 
 	if (!m_Configs.bReadInfo)
 	{
-		GetDlgItem(ID_BTN_WRITE)->SetWindowText(_T("写入"));
+		GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
 		if (m_Configs.devsn.bEnable&&m_Configs.devsn.nAutoMode == MODE_MANUAL)
 		{
 			GetDlgItem(IDC_EDIT_SN)->EnableWindow(TRUE);
@@ -284,14 +321,13 @@ VOID CWNpctoolDlg::InitUi()
 		}
 	}
 
-	m_CbDevice.AddString(_T("USB1"));
-	m_CbDevice.AddString(_T("USB2"));
 	//list
-	CRect rc;
-	m_listInfo.GetClientRect(rc);
-	m_listInfo.SetExtendedStyle(m_listInfo.GetExtendedStyle() |  LVS_EX_GRIDLINES |LVS_EX_FULLROWSELECT|LVS_EX_FULLROWSELECT);
-	m_listInfo.InsertColumn(0, _T("Time"), LVCFMT_CENTER, rc.Width()/4, 0);   
-	m_listInfo.InsertColumn(1, _T("Message"), LVCFMT_CENTER, 3*rc.Width()/4, 1);   
+	font.CreateFont(-13,10,0,0,FW_NORMAL,FALSE,FALSE,0,  
+		ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,  
+		DEFAULT_QUALITY,DEFAULT_PITCH|FF_DONTCARE,_T("宋体"));
+	m_listInfo.SetFont(&font);
+	font.Detach();
+	m_listInfo.SetWindowBKColor(RGB(0,0,0));
 }
 
 BOOL CWNpctoolDlg::LoadConfig()
@@ -322,7 +358,7 @@ BOOL CWNpctoolDlg::LoadConfig()
 	}
 	else
 	{
-		strConfigPath = strConfigPath + m_Configs.strCnFilename.c_str();
+		strConfigPath = strConfigPath + m_Configs.strEnFilename.c_str();
 	}
 	if (!cmFile::IsExisted(strConfigPath))
 	{
@@ -333,6 +369,7 @@ BOOL CWNpctoolDlg::LoadConfig()
 		return FALSE;
 	}
 	bLoadConfig = m_LocalLan.LoadToolSetting(strConfigPath.GetString());
+	m_LocalLan.TreeControls(m_hWnd,m_Configs.bDebug?TRUE:FALSE,this->IDD,true);
 	if (!bLoadConfig)
 	{
 		if (m_pLogObject)
@@ -341,16 +378,41 @@ BOOL CWNpctoolDlg::LoadConfig()
 		}
 		return FALSE;
 	}
+	if(!m_Configs.bDebug) {
+		WalkMenu(GetMenu(),TEXT("MENU"));
+	}
 	GetLocalString(TEXT("LANG:IDS_APPNAME"));
 	return TRUE;
+}
+VOID CWNpctoolDlg::WalkMenu(CMenu *pMenu,CString strMainKeyPart)
+{
+	CString strKey;
+	int     id ;
+	UINT    i;
+	if(NULL == pMenu) return ;
+	for (i=0;i < pMenu->GetMenuItemCount();i++) {
+		strKey.Format(_T("%s_%d"),strMainKeyPart,i);
+		id = pMenu->GetMenuItemID(i);
+		if (0 == id) { 
+			/*If nPos corresponds to a SEPARATOR menu item, the return value is 0. **/
+		} else if (-1 == id) { 
+			/*If the specified item is a pop-up menu (as opposed to an item within the pop-up menu), the return value is –1 **/
+			pMenu->ModifyMenu(i, MF_BYPOSITION, i, m_LocalLan.GetStr((LPCTSTR)strKey).c_str());
+			WalkMenu(pMenu->GetSubMenu(i),strKey);
+		} else {
+			pMenu->ModifyMenu(id, MF_BYCOMMAND, id,m_LocalLan.GetStr((LPCTSTR)strKey).c_str());
+		}
+	}
 }
 void CWNpctoolDlg::OnLogFolder()
 {
 	// TODO: Add your command handler code here
-	//ShellExecute(NULL, _T("open"), m_Configs.basic.strLogPath, NULL, NULL, SW_SHOWNORMAL);
+	ShellExecute(NULL, _T("open"), m_Configs.strLogPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 void CWNpctoolDlg::ScanDeviceProc()
 {
+	UINT nDeviceCount = 0;
+	bool bSendMsg = FALSE;
 	m_pScanEvent = new CEvent(FALSE,TRUE);
 	m_pScanEvent->ResetEvent();
 	m_nDeviceCount = 0;
@@ -358,15 +420,25 @@ void CWNpctoolDlg::ScanDeviceProc()
 	m_bExistAdb = FALSE;
 	while (!m_bTerminated)
 	{
+		nDeviceCount = 0;
+		bSendMsg = FALSE;
 		m_csScanLock.Lock();
-		RK_ScanDevice(m_nDeviceCount,m_bExistMsc,m_bExistAdb);
+		RK_ScanDevice(nDeviceCount,m_bExistMsc,m_bExistAdb);
+		if (m_nDeviceCount != nDeviceCount)
+		{
+			m_nDeviceCount = nDeviceCount;
+			bSendMsg = TRUE;
+
+		}
 		m_csScanLock.Unlock();
 		if (m_nDeviceCount==0)
 		{
+			m_bRedLedLight = TRUE;
 			m_lblDevice.SetWindowText(_T("Not found rockusb"));
 		}
 		else if (m_nDeviceCount==1)
 		{
+			m_bRedLedLight = FALSE;
 			if (m_bExistMsc)
 			{
 				m_lblDevice.SetWindowText(_T("Found one msc"));
@@ -390,9 +462,14 @@ void CWNpctoolDlg::ScanDeviceProc()
 		}
 		else if (m_nDeviceCount>1)
 		{
+			m_bRedLedLight = FALSE;
 			m_lblDevice.SetWindowText(_T("Found many rockusb"));
 		}
 		m_lblDevice.RedrawWindow();
+		if (bSendMsg)
+		{
+			PostMessage(WM_UPDATE_MSG,UPDATE_WINDOW,0);
+		}
 		Sleep(200);
 	}
 
@@ -407,7 +484,6 @@ void CWNpctoolDlg::OnClose()
 		MessageBox(_T("Running now,please wait!"),NULL,MB_OK|MB_ICONERROR);
 		return;
 	}
-
 	m_bTerminated = TRUE;
 	if (m_pScanThread)
 	{
@@ -449,59 +525,119 @@ void CWNpctoolDlg::OnClose()
 	{
 		RK_Uninitialize();
 	}
+	if (m_hRedLedBitmap) {
+		DeleteObject(m_hRedLedBitmap);
+		m_hRedLedBitmap = NULL;
+	}
+
+	if (m_hGreenLedBitmap) {
+		DeleteObject(m_hGreenLedBitmap);
+		m_hGreenLedBitmap = NULL;
+	}
+
 	CDialog::OnClose();
 }
 
 BOOL CWNpctoolDlg::WriteProc()
 {
 	BOOL bSuccess=FALSE;
+	CString         strPrompt;
 
+	if (m_listInfo.GetCount()>0) {
+		PostMessage(WM_UPDATE_MSG,UPDATE_LIST,LIST_EMPTY);
+	}
+
+	AddPrompt(GetLocalString(_T("IDS_INFO_START_WRITE")).c_str(),LIST_INFO);
 	//1.烧写devsn,先写后读，读出来的值与写进去的值一致则成功，否则失败
+	if (m_bUserStop) {
+		goto WriteProc_Exit;
+	}  
 	if (m_Configs.devsn.bEnable)
 	{
+		AddPrompt(GetLocalString(_T("IDS_INFO_SN_WRITE")).c_str(),LIST_INFO);
+		strPrompt.Format(TEXT("DEVSN:%s"),(LPCTSTR)m_strCurDevSn);
+		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_SN))
 		{
 			m_pLogObject->Record(_T("Write SN failed."));
+			AddPrompt(GetLocalString(_T("IDS_ERROR_SN_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
 	}
+	AddPrompt(GetLocalString(_T("IDS_INFO_SN_PASS")).c_str(),LIST_INFO);
 	//2.烧写wifimac
+	if (m_bUserStop) {
+		goto WriteProc_Exit;
+	}  
 	if (m_Configs.WifiMac.bEnable)
 	{
+		AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_WRITE")).c_str(),LIST_INFO);
+		strPrompt.Format(TEXT("WIFIMAC:%s"),(LPCTSTR)m_strCurWifiMac);
+		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_WIFIMAC))
 		{
 			m_pLogObject->Record(_T("Write WifiMac failed."));
+			AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
 	}
+	AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_PASS")).c_str(),LIST_INFO);
 	//3.烧写btmac
+	if (m_bUserStop) {
+		goto WriteProc_Exit;
+	}  
 	if (m_Configs.BtMac.bEnable)
 	{
+		AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_WRITE")).c_str(),LIST_INFO);
+		strPrompt.Format(TEXT("BTMAC:%s"),(LPCTSTR)m_strCurBtMac);
+		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_BTMAC))
 		{
 			m_pLogObject->Record(_T("Write BtMac failed."));
+			AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
 	}
+	AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_PASS")).c_str(),LIST_INFO);
 	//4.烧写lanmac
+	if (m_bUserStop) {
+		goto WriteProc_Exit;
+	}  
 	if (m_Configs.LanMac.bEnable)
 	{
+		AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_WRITE")).c_str(),LIST_INFO);
+		strPrompt.Format(TEXT("LANMAC:%s"),(LPCTSTR)m_strCurLanMac);
+		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_LANMAC))
 		{
 			m_pLogObject->Record(_T("Write LanMac failed."));
+			AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
 	}
+	AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_PASS")).c_str(),LIST_INFO);
 	bSuccess = TRUE;
 WriteProc_Exit:
 	m_bRun = FALSE;
 	//EnableCtrl();
+	if (m_bUserStop) {
+		strPrompt.Format(GetLocalString(_T("IDS_INFO_USER_ABORT")).c_str());
+		AddPrompt(strPrompt,LIST_ERR);
+	}
 	if (bSuccess)
 	{
 		MessageBox(_T("Burning OK."),_T("Info"),MB_OK|MB_ICONINFORMATION);
 	}
 	else
 		MessageBox(_T("Burning Failed."),_T("Error"),MB_OK|MB_ICONERROR);
+	m_pWriteThread = NULL;
+	/*exit will set button status,so we must set m_pWorkThread = NULL before **/
+	if (!m_Configs.bAutoTest||m_bUserStop) {
+		if (m_bUserStop) {
+			m_bUserStop = FALSE;
+		}
+		PostMessage(WM_UPDATE_MSG,UPDATE_TEST_EXIT);
+	}
 	return bSuccess;
 }
 BOOL CWNpctoolDlg::WriteItem(int nItemID)
@@ -690,21 +826,31 @@ void CWNpctoolDlg::OnBnClickedBtnWrite()
 	if(m_Configs.bReadInfo) {
 		if(m_pReadThread) { 
 			m_bUserStop     = TRUE;
-			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOPING")).c_str());
+			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOPING_BUTTON")).c_str());
 		} else {
 			if(OnStartRead()) {
-				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOP")).c_str());
+				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOP_BUTTON")).c_str());
 			}
 		}
 	} else {
-		if(m_pWriteThread) { 
-			m_bUserStop     = TRUE;
-			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOPING")).c_str());
-		} else {
-			if(OnStartWrite()) {
-				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOP")).c_str());
+		if (m_bRun)
+		{
+			if(m_pWriteThread) { 
+				m_bUserStop     = TRUE;
+				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOPING_BUTTON")).c_str());
+			} else {
+				m_bRun = FALSE;
+				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
+				//if(OnStartWrite()) {
+				//	SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOP")).c_str());
+				//}
 			}
+		}else {
+			m_bRun    = TRUE;
+			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOP_BUTTON")).c_str());
+			OnStartWrite();
 		}
+
 	}
 }
 BOOL CWNpctoolDlg::OnStartRead()
@@ -739,6 +885,10 @@ OnStartReadExit:
 	}
 	return FALSE;
 }
+std::wstring CWNpctoolDlg::GetLocalString(std::wstring strKey)
+{
+	return m_LocalLan.GetLanStr(strKey);
+}
 BOOL CWNpctoolDlg::OnStartWrite()
 {
 	CString     strPromt;
@@ -748,7 +898,8 @@ BOOL CWNpctoolDlg::OnStartWrite()
 	if (m_nDeviceCount!=1)
 	{
 		m_csScanLock.Unlock();
-		strPromt = _T("Not found rockusb to burn.");
+		//AddPrompt(GetLocalString(_T("LANG:IDS_INFO_START_WRITE")).c_str(),LIST_INFO);
+		strPromt = GetLocalString(_T("IDS_ERROR_NO_USB_WRITE")).c_str();
 		//MessageBox(_T("Not found rockusb to burn."),_T("Error"),MB_OK|MB_ICONERROR);
 		goto OnStartWriteExit;
 	}
@@ -782,6 +933,11 @@ BOOL CWNpctoolDlg::OnStartWrite()
 		{
 
 		}
+		if(m_strCurDevSn.IsEmpty()) 
+		{
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_INVALID_DEVSN")).c_str(),m_strCurBtMac);
+			goto OnStartWriteExit;
+		}
 	}
 
 	if (m_Configs.WifiMac.bEnable)
@@ -805,7 +961,7 @@ BOOL CWNpctoolDlg::OnStartWrite()
 		}
 		if(!CheckMacStr(m_strCurWifiMac)) 
 		{
-			strPromt.Format(GetLocalString(_T("IDS_ERROR_WIFIMAC_FROM_FILE")).c_str(),m_strCurWifiMac);
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_INVALID_WIFIMAC")).c_str(),m_strCurWifiMac);
 			goto OnStartWriteExit;
 		}
 	}
@@ -831,7 +987,7 @@ BOOL CWNpctoolDlg::OnStartWrite()
 		}
 		if(!CheckMacStr(m_strCurBtMac)) 
 		{
-			strPromt.Format(GetLocalString(_T("IDS_ERROR_WIFIMAC_FROM_FILE")).c_str(),m_strCurBtMac);
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_INVALID_BTMAC")).c_str(),m_strCurBtMac);
 			goto OnStartWriteExit;
 		}
 	}
@@ -857,11 +1013,11 @@ BOOL CWNpctoolDlg::OnStartWrite()
 		}
 		if(!CheckMacStr(m_strCurLanMac)) 
 		{
-			strPromt.Format(GetLocalString(_T("IDS_ERROR_WIFIMAC_FROM_FILE")).c_str(),m_strCurLanMac);
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_INVALID_LANMAC")).c_str(),m_strCurLanMac);
 			goto OnStartWriteExit;
 		}
 	}
-	m_bRun = TRUE;
+	//m_bRun = TRUE;
 	AfxBeginThread(ThreadWrite,(LPVOID)this);
 
 	return TRUE;
@@ -874,6 +1030,76 @@ OnStartWriteExit:
 void CWNpctoolDlg::OnSettingMode()
 {
 	// TODO: Add your command handler code here
-	m_ConfigModeDlg.UpdateInterface();
-	m_ConfigModeDlg.ShowWindow(SW_SHOW);
+	CConfigMode ConfigModeDlg(m_Configs,m_LocalLan);
+	//ConfigModeDlg.UpdateInterface();
+	if (IDOK == ConfigModeDlg.DoModal())
+	{
+		m_Configs.SaveToolSetting(std::wstring(TEXT("")));
+		InitUi();
+	}
+
+	//m_ConfigModeDlg.ShowWindow(SW_SHOW);
+}
+
+void CWNpctoolDlg::AddPrompt(CString strPrompt,int flag)
+{
+	PSTRUCT_LIST_LINE   pLine=NULL;
+	SYSTEMTIME          curTime;
+
+	//LDEGMSGW((CLogger::DEBUG_INFO,(LPCTSTR)strPrompt));
+	GetLocalTime( &curTime );
+	pLine       = new STRUCT_LIST_LINE;
+	if (!pLine) {
+		return;
+	}
+	wsprintf(pLine->pszLineText,
+		_T("%02d:%02d:%02d %03d\t%s "),
+		curTime.wHour,curTime.wMinute,curTime.wSecond,curTime.wMilliseconds,
+		(LPCTSTR)strPrompt);
+	pLine->flag = flag;
+	if(0 == PostMessage(WM_UPDATE_MSG,UPDATE_LIST,(LPARAM)pLine)) {
+		delete pLine;
+	}
+	return;
+
+}
+
+LRESULT CWNpctoolDlg::OnHandleUpdateMsg(WPARAM wParam,LPARAM lParam)
+{
+	switch(wParam) {
+	case UPDATE_TEST_EXIT:
+		m_bRun = FALSE;
+		if (m_Configs.bReadInfo)
+		{
+			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
+		}
+		else
+		{
+			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
+		}
+		break;
+	case UPDATE_WINDOW:
+		RedrawWindow();
+		break;
+	case UPDATE_LIST:
+		if (lParam == LIST_EMPTY) {
+			m_listInfo.ResetContent();
+		} else {
+			PSTRUCT_LIST_LINE pLine = (PSTRUCT_LIST_LINE)lParam;
+			if (pLine->flag == LIST_INFO) {
+				m_listInfo.AddLine(CXListBox::White,CXListBox::Black,pLine->pszLineText); 
+			} else if (pLine->flag == LIST_TIME) {
+				m_listInfo.AddLine(CXListBox::White,CXListBox::Purple,pLine->pszLineText);
+			} else if (pLine->flag == LIST_WARN){ 
+				m_listInfo.AddLine(CXListBox::Black,CXListBox::Yellow,pLine->pszLineText);
+			} else {
+				m_listInfo.AddLine(CXListBox::White,CXListBox::Red,pLine->pszLineText);
+			}
+			//m_listInfo.SetCurSel(m_listInfo.GetCount()-1);
+			delete pLine;
+		}
+		break;
+
+	}
+	return 0;
 }

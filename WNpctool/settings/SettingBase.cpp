@@ -271,8 +271,8 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
     }
     szLan                   = GetStr(TEXT("CONFIG:Lan"));
     nLogLevel               = _wtoi(GetStr(TEXT("LogLevel")).c_str());
-    strLogPath              = GetStr(TEXT("LogPath"));
-    bDebug                  = 1 == _wtoi(GetStr(TEXT("Debug")).c_str());
+    //strLogPath              = GetStr(TEXT("LogPath"));
+    //bDebug                  = 1 == _wtoi(GetStr(TEXT("Debug")).c_str());
     bOnlyAt                 = 1 == _wtoi(GetStr(TEXT("OnlyAt")).c_str());
     bAutoTest               = 1 == _wtoi(GetStr(TEXT("AutoTest")).c_str());
     bWideVine               = 1 == _wtoi(GetStr(TEXT("WideVine")).c_str());
@@ -318,7 +318,7 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
 	/********************** System config **********************/
 	strLogPath          = GetStr(TEXT("System:LogPath"));
 	bDebug              = 1 == _wtoi(GetStr(TEXT("Debug")).c_str());
-	bReadInfo			= _wtoi(GetStr(TEXT("READ")).c_str());
+	bReadInfo			= 1 == _wtoi(GetStr(TEXT("READ")).c_str());
 	/********************** DevSn **********************/
 	devsn.bEnable		= _wtoi(GetStr(TEXT("DSWR")).c_str());
 	devsn.strPrefix		= GetStr(TEXT("DSPF"));
@@ -330,9 +330,9 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
 	devsn.strCurrentSn	= GetStr(TEXT("DSSC"));
 	devsn.strEndSn		= GetStr(TEXT("DSSD"));
 	nValue				= _wtoi(GetStr(TEXT("DSST")).c_str());
-	devsn.nSnCount		= (0 > nValue)?nValue:0;
+	devsn.nSnCount		= (0 <= nValue)?nValue:0;
 	nValue				= _wtoi(GetStr(TEXT("DSSR")).c_str());
-	devsn.nRemainCount	= (0 > nValue)?nValue:0;
+	devsn.nRemainCount	= (0 <= nValue)?nValue:0;
 
 	/********************** WifiMac **********************/
 	WifiMac.bEnable			= _wtoi(GetStr(TEXT("WMWR")).c_str());
@@ -405,42 +405,92 @@ bool CIniSettingBase::SaveToolSetting(std::wstring strConfig)
 
     std::wstring checke = TEXT("1"),unckeck = TEXT("0");
     std::wstring szValue1,szValue2;
-    TCHAR szTemp1[64],szTemp2[64];
-    int     i;
+    TCHAR szTemp1[64];
     if(!pIniFile ) {
         pIniFile    = new CIniFile;
     }
     if(pIniFile) {
-        SetStr( TEXT("CONFIG:Lan")  	, szLan);
-        SetStr( TEXT("LogPath")     	, strLogPath);
-        SetStr( TEXT("OnlyAt")      	, bOnlyAt   ?checke:unckeck);
-        SetStr( TEXT("AutoTest")    	, bAutoTest ?checke:unckeck);
-        SetStr( TEXT("WideVine")    	, bWideVine ?checke:unckeck);
-        SetStr( TEXT("Fuse")        	, bFuse     ?checke:unckeck);
-        SetStr( TEXT("UseDB")        	, bUseDB    ?checke:unckeck);
-#ifdef USER_LOGIN
-        SetStr( TEXT("UseDBL")        	, bLogin    ?checke:unckeck);
-        SetStr( TEXT("LoginPassword")   , EncryptPassWord(strLoginPwd));
-#endif
-        SetStr( TEXT("XmlFileName") 	, strXmlFileName);
-        SetStr( TEXT("FuseFileName")	, strFuseScriptFileName);
-        SetStr( TEXT("DataBaseServer")	, strServer);
-        SetStr( TEXT("UserName")		, strUserName);
-        SetStr( TEXT("Password")		, EncryptPassWord(strPassword));
-        SetStr( TEXT("DBTable")  		, strDataBaseTable);
-        SetStr( TEXT("DBName")			, strDataBaseName);
-        SetStr( TEXT("DBPort")			, strPort);
- 
-        swprintf(szTemp1,nof(szTemp1),TEXT("%d"),nSnType);
-        SetStr( TEXT("SnType")          , szTemp1);
-        /*database item ***/
-        std::wstring    item;
-        int             i;
-        item = strItemName[0];
-        for( i = 1; i < FLAG_WVCNT; i ++) {
-            item += (TEXT(",") + strItemName[i]);
-        }
-        SetStr( TEXT("ItemMap"),item);
+        SetStr( TEXT("System:LogPath")  , strLogPath);
+        SetStr( TEXT("Debug")			, bDebug   ?checke:unckeck);
+        SetStr( TEXT("READ")    		, bReadInfo ?checke:unckeck);
+        SetStr( TEXT("DSWR")    		, devsn.bEnable ?checke:unckeck);
+        SetStr( TEXT("DSPF")        	, devsn.strPrefix);
+        SetStr( TEXT("DSSF")        	, devsn.strSuffix);
+        SetStr( TEXT("DSSS") 			, devsn.strStartSn);
+		SetStr( TEXT("DSSC") 			, devsn.strCurrentSn);
+		SetStr( TEXT("DSSD") 			, devsn.strEndSn);
+
+        swprintf(szTemp1,nof(szTemp1),TEXT("%d"),devsn.nAutoMode);
+        SetStr( TEXT("DSAI")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),devsn.nSnCount);
+		SetStr( TEXT("DSST")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),devsn.nRemainCount);
+		SetStr( TEXT("DSSR")          , szTemp1);
+		/********************** WifiMac **********************/
+		SetStr( TEXT("WMSS") 			, WifiMac.strStartMac);
+		SetStr( TEXT("WMSC") 			, WifiMac.strCurrentMac);
+		SetStr( TEXT("WMSD") 			, WifiMac.strEndMac);
+		SetStr( TEXT("WMWR")    		, WifiMac.bEnable ?checke:unckeck);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),WifiMac.nCount);
+		SetStr( TEXT("WMST")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),WifiMac.nRemainCount);
+		SetStr( TEXT("WMSR")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),WifiMac.nAutoMode);
+		SetStr( TEXT("WMAI")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),WifiMac.dwType);
+		SetStr( TEXT("WMTP")          , szTemp1);
+		/*file*/
+		SetStr( TEXT("WMFN") 			, confPath.filePath[FLAG_WIFIMAC]);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.lFilePos[FLAG_WIFIMAC]);
+		SetStr( TEXT("WMFP")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLineCnt[FLAG_WIFIMAC]);
+		SetStr( TEXT("WMLC")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLinePos[FLAG_WIFIMAC]);
+		SetStr( TEXT("WMLP")          , szTemp1);
+
+		/********************** BtMac **********************/
+		SetStr( TEXT("BMSS") 			, BtMac.strStartMac);
+		SetStr( TEXT("BMSC") 			, BtMac.strCurrentMac);
+		SetStr( TEXT("BMSD") 			, BtMac.strEndMac);
+		SetStr( TEXT("BMWR")    		, BtMac.bEnable ?checke:unckeck);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),BtMac.nCount);
+		SetStr( TEXT("BMST")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),BtMac.nRemainCount);
+		SetStr( TEXT("BMSR")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),BtMac.nAutoMode);
+		SetStr( TEXT("BMAI")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),BtMac.dwType);
+		SetStr( TEXT("BMTP")          , szTemp1);
+		/*file*/
+		SetStr( TEXT("BMFN") 			, confPath.filePath[FLAG_BTMAC]);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.lFilePos[FLAG_BTMAC]);
+		SetStr( TEXT("BMFP")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLineCnt[FLAG_BTMAC]);
+		SetStr( TEXT("BMLC")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLinePos[FLAG_BTMAC]);
+		SetStr( TEXT("BMLP")          , szTemp1);
+
+		/********************** LanMac **********************/
+		SetStr( TEXT("LMSS") 			, LanMac.strStartMac);
+		SetStr( TEXT("LMSC") 			, LanMac.strCurrentMac);
+		SetStr( TEXT("LMSD") 			, LanMac.strEndMac);
+		SetStr( TEXT("LMWR")    		, LanMac.bEnable ?checke:unckeck);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),LanMac.nCount);
+		SetStr( TEXT("LMST")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),LanMac.nRemainCount);
+		SetStr( TEXT("LMSR")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),LanMac.nAutoMode);
+		SetStr( TEXT("LMAI")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),LanMac.dwType);
+		SetStr( TEXT("LMTP")          , szTemp1);
+		/*file*/
+		SetStr( TEXT("LMFN") 			, confPath.filePath[FLAG_LANMAC]);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.lFilePos[FLAG_LANMAC]);
+		SetStr( TEXT("LMFP")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLineCnt[FLAG_LANMAC]);
+		SetStr( TEXT("LMLC")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLinePos[FLAG_LANMAC]);
+		SetStr( TEXT("LMLP")          , szTemp1);
 
 		return pIniFile->Save(szFileName);
     }
@@ -903,7 +953,6 @@ bool CIniLocalLan::TreeControls(void * pParam,BOOL bSvae,int DlgId,bool bVer)
         SetWindowText(hWnd,strTitle.c_str());
         bReturn = EnumChildWindows(hWnd,(WNDENUMPROC)::SetStringProc,(LPARAM)this);
     }
-    /*APPNAME = GetStr(TEXT("LANG:APPNAME"));**/
     if (!bReturn) {
         return false;
     }

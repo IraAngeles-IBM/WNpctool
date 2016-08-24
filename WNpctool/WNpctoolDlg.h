@@ -15,6 +15,18 @@ using namespace cm;
 #include "afxwin.h"
 #include "ConfigMode.h"
 #include "afxcmn.h"
+#include "./XListBox/XListBox.h"
+
+#define WM_COM_ADD		    1
+#define WM_COM_RM		    2
+#define UPDATE_LIST         3
+#define LIST_EMPTY          4
+#define UPDATE_TEST_EXIT    5
+#define UPDATE_WINDOW		6
+#define LIST_INFO 0
+#define LIST_TIME 1
+#define LIST_WARN 2
+#define LIST_ERR  3
 
 enum ENUM_WRITEITEM_ID{
 	ITEM_SN = 1,
@@ -23,6 +35,11 @@ enum ENUM_WRITEITEM_ID{
 	ITEM_BTMAC,
 
 };
+typedef struct  
+{
+	int flag;
+	TCHAR   pszLineText[MAX_PATH];
+}STRUCT_LIST_LINE,*PSTRUCT_LIST_LINE;
 
 typedef struct _STRUCT_BURNINGITEM
 {
@@ -45,11 +62,14 @@ public:
 public:
 	CIniSettingBase m_Configs;
 	CIniLocalLan	m_LocalLan;
-	void ScanDeviceProc();
-	BOOL WriteProc();
-	BOOL ReadProc();
-	BOOL WriteItem(int nItemID);
-	BOOL ReadItem(int nItemID);
+	void			ScanDeviceProc();
+	BOOL			WriteProc();
+	BOOL			ReadProc();
+	BOOL			WriteItem(int nItemID);
+	BOOL			ReadItem(int nItemID);
+	LRESULT			OnHandleUpdateMsg(WPARAM wParam,LPARAM lParam);
+	void			AddPrompt(CString strPrompt,int flag);
+	VOID			WalkMenu(CMenu *pMenu,CString strMainKeyPart);
 private:
 	CString         m_strModulePath;
 	CString			m_strLogPath;
@@ -77,16 +97,16 @@ private:
 	BOOL			m_bExistLoader;
 	BOOL			m_bRun;
 
-	CConfigMode m_ConfigModeDlg;
+	BOOL            m_bRedLedLight;
+	HBITMAP         m_hGreenLedBitmap;
+	HBITMAP         m_hRedLedBitmap;
+	//CConfigMode m_ConfigModeDlg;
 
 	BOOL	LoadConfig();
 	VOID	InitUi();
 	BOOL	OnStartRead();
 	BOOL	OnStartWrite();
-	std::wstring GetLocalString(std::wstring strKey)
-	{
-		return m_LocalLan.GetStr(strKey,TEXT(""));
-	}
+	std::wstring GetLocalString(std::wstring strKey);
 
 // й╣ож
 protected:
@@ -105,6 +125,5 @@ public:
 	CStatic m_lblDevice;
 	afx_msg void OnBnClickedBtnWrite();
 	afx_msg void OnSettingMode();
-	CListCtrl m_listInfo;
-	CListBox m_CbDevice;
+	CXListBox m_listInfo;
 };

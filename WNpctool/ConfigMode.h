@@ -14,7 +14,7 @@ class CConfigMode : public CDialog
 	DECLARE_DYNAMIC(CConfigMode)
 
 public:
-	CConfigMode(CIniSettingBase &Config,CWnd* pParent = NULL);   // standard constructor
+	CConfigMode(CIniSettingBase &Config,CIniLocalLan &LocalLang,CWnd* pParent = NULL);   // standard constructor
 	virtual ~CConfigMode();
 
 // Dialog Data
@@ -28,6 +28,7 @@ protected:
 public:
 public:
 	CIniSettingBase &m_Configs;
+	CIniLocalLan    &m_LocalLang;
 	CDialog			*m_ChildCWnds[5];
 	int				m_iCurSelTab;
 	CSnDlg			m_SnDlg;

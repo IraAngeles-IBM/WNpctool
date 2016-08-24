@@ -10,8 +10,9 @@
 
 IMPLEMENT_DYNAMIC(CConfigMode, CDialog)
 
-CConfigMode::CConfigMode(CIniSettingBase &Config,CWnd* pParent /*=NULL*/)
-	: CDialog(CConfigMode::IDD, pParent),m_Configs(Config),m_SnDlg(m_Configs),m_WifiMacDlg(m_Configs),m_BtMacDlg(m_Configs),m_LanMacDlg(m_Configs)
+CConfigMode::CConfigMode(CIniSettingBase &Config,CIniLocalLan &LocalLang,CWnd* pParent /*=NULL*/)
+	: CDialog(CConfigMode::IDD, pParent),m_Configs(Config),m_LocalLang(LocalLang),m_SnDlg(Config,LocalLang),
+	m_WifiMacDlg(Config,LocalLang),m_BtMacDlg(Config,LocalLang),m_LanMacDlg(Config,LocalLang)
 {
 
 }
@@ -46,6 +47,8 @@ BOOL CConfigMode::OnInitDialog()
 	m_TabMode.InsertItem(1,_T("WIFI MAC"));
 	m_TabMode.InsertItem(2,_T("LAN MAC"));
 	m_TabMode.InsertItem(3,_T("BT MAC"));
+	m_LocalLang.TreeControls(m_hWnd,m_Configs.bDebug?TRUE:FALSE,this->IDD,false);
+
 	m_SnDlg.Create(IDD_DIALOG_SN,&m_TabMode);
 	m_WifiMacDlg.Create(IDD_DIALOG_WIFIMAC,&m_TabMode);
 	m_LanMacDlg.Create(IDD_DIALOG_LANMAC,&m_TabMode);
@@ -96,6 +99,19 @@ void CConfigMode::OnBnClickedBtnModeApply()
 void CConfigMode::OnBnClickedBtnModeOk()
 {
 	// TODO: Add your control notification handler code here
+	if(!m_SnDlg.OnSaveConfig()) {
+		return ;
+	}
+	if(!m_WifiMacDlg.OnSaveConfig()) {
+		return ;
+	}
+	if(!m_BtMacDlg.OnSaveConfig()) {
+		return ;
+	}
+	if(!m_LanMacDlg.OnSaveConfig()) {
+		return ;
+	}
+	CDialog::OnOK();
 }
 
 void CConfigMode::OnTcnSelchangeTabSnmac(NMHDR *pNMHDR, LRESULT *pResult)

@@ -12,7 +12,9 @@
 #define IDD_DIALOG_MODE                 130
 #define IDD_DIALOG_SN                   131
 #define IDD_DIALOG_WIFIMAC              132
+#define IDB_BMP_GREENLED                132
 #define IDD_DIALOG_LANMAC               133
+#define IDB_BMP_REDLED                  133
 #define IDD_DIALOG_BTMAC                134
 #define IDC_CB_DEVICES                  1000
 #define ID_BTN_WRITE                    1001
@@ -26,7 +28,6 @@
 #define IDC_EDIT_BTMAC                  1009
 #define IDC_LIST2                       1010
 #define IDC_LIST_LOG                    1010
-#define IDC_LIST_INFO                   1010
 #define IDC_STATIC_STATUS               1011
 #define IDC_LABEL_DEVICE                1012
 #define IDC_TAB_SNMAC                   1013
@@ -108,6 +109,8 @@
 #define IDC_EDIT_BTMAC_FILE_PATH        1090
 #define IDC_BUTTON_BTMAC_FILE_PATH      1091
 #define IDC_RADIO_FILE_SN               1092
+#define IDC_PICTURE_DEVICE              1093
+#define IDC_LIST_REPORT                 1094
 #define ID_SETTING                      32771
 #define ID_HELP32772                    32772
 #define ID_HELP_FOLDER                  32773
@@ -118,9 +121,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        132
+#define _APS_NEXT_RESOURCE_VALUE        134
 #define _APS_NEXT_COMMAND_VALUE         32776
-#define _APS_NEXT_CONTROL_VALUE         1093
+#define _APS_NEXT_CONTROL_VALUE         1095
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

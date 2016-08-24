@@ -14,7 +14,7 @@
 // CWNpctoolApp:
 // 有关此类的实现，请参阅 WNpctool.cpp
 //
-
+#define WM_UPDATE_MSG           WM_USER+1
 class CWNpctoolApp : public CWinAppEx
 {
 public:

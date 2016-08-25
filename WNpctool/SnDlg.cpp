@@ -158,7 +158,7 @@ BOOL CSnDlg::OnSaveConfig()
 				CompareNumString(m_Configs.devsn.strCurrentSn.c_str(),m_Configs.devsn.strStartSn.c_str())&&
 				CompareNumString(m_Configs.devsn.strEndSn.c_str(),m_Configs.devsn.strStartSn.c_str())))
 			{
-				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT")).c_str(),TEXT("DEV SN"));
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("DEV SN"));
 				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
 				return bResult;					
 			}

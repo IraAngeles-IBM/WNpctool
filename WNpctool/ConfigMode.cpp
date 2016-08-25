@@ -32,6 +32,7 @@ BEGIN_MESSAGE_MAP(CConfigMode, CDialog)
 	ON_BN_CLICKED(IDC_BTN_MODE_APPLY, &CConfigMode::OnBnClickedBtnModeApply)
 	ON_BN_CLICKED(IDC_BTN_MODE_OK, &CConfigMode::OnBnClickedBtnModeOk)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB_SNMAC, &CConfigMode::OnTcnSelchangeTabSnmac)
+	ON_BN_CLICKED(IDC_BTN_MODE_CANCEL, &CConfigMode::OnBnClickedBtnModeCancel)
 END_MESSAGE_MAP()
 
 
@@ -138,4 +139,14 @@ void CConfigMode::OnTcnSelchangeTabSnmac(NMHDR *pNMHDR, LRESULT *pResult)
 	}else {
 		//m_tabconfsw.SetCurSel(m_iCurSelTab);
 	}
+}
+
+void CConfigMode::OnBnClickedBtnModeCancel()
+{
+	// TODO: Add your control notification handler code here
+	//m_SnDlg.UpdateInterface();
+	//m_WifiMacDlg.UpdateInterface();
+	//m_BtMacDlg.UpdateInterface();
+	//m_LanMacDlg.UpdateInterface();
+	CDialog::OnCancel();
 }

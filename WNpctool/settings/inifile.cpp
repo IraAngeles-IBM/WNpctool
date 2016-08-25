@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "inifile.h"
 #include <algorithm>
 #include <iostream>
@@ -38,7 +37,7 @@
 #endif
 
 // Convert wstring to string
-static std::string wstr_to_str(const std::wstring& arg)
+std::string wstr_to_str(const std::wstring& arg)
 {
     std::string res( arg.length(), '\0' );
     wcstombs( const_cast<char*>(res.data()) , arg.c_str(), arg.length());
@@ -46,7 +45,7 @@ static std::string wstr_to_str(const std::wstring& arg)
 }
 
 // Convert string to wstring
-static std::wstring str_to_wstr(const std::string& arg)
+std::wstring str_to_wstr(const std::string& arg)
 {
     std::wstring res(arg.length(), L'\0');
     mbstowcs(const_cast<wchar_t*>(res.data()), arg.c_str(), arg.length());
@@ -54,7 +53,7 @@ static std::wstring str_to_wstr(const std::string& arg)
 }
 
 // Helper Functions
-static void RTrim(std::string &str, const std::string& chars = " \t")
+void RTrim(std::string &str, const std::string& chars = " \t")
 {
 #ifdef _CINIFILE_DEBUG
     std::cout <<  "RTrim()" << std::endl;
@@ -62,7 +61,7 @@ static void RTrim(std::string &str, const std::string& chars = " \t")
     str.erase(str.find_last_not_of(chars)+1);
 }
 
-static void LTrim(std::string &str, const std::string& chars = " \t" )
+void LTrim(std::string &str, const std::string& chars = " \t" )
 {
 #ifdef _CINIFILE_DEBUG
     std::cout <<  "LTrim()" << std::endl;
@@ -70,7 +69,7 @@ static void LTrim(std::string &str, const std::string& chars = " \t" )
     str.erase(0, str.find_first_not_of(chars));
 }
 
-static void Trim( std::string& str , const std::string& chars = " \t" )
+void Trim( std::string& str , const std::string& chars = " \t" )
 {
 #ifdef _CINIFILE_DEBUG
     std::cout <<  "Trim()" << std::endl;
@@ -689,7 +688,7 @@ std::string CIniKeyA::GetKeyName() const
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Helper Functions
-static void RTrim(std::wstring &str, const std::wstring& chars = L" \t")
+void RTrim(std::wstring &str, const std::wstring& chars = L" \t")
 {
 #ifdef _CINIFILE_DEBUG
     std::wcout <<  L"RTrim()" << std::endl;
@@ -697,7 +696,7 @@ static void RTrim(std::wstring &str, const std::wstring& chars = L" \t")
     str.erase(str.find_last_not_of(chars)+1);
 }
 
-static void LTrim(std::wstring &str, const std::wstring& chars = L" \t" )
+void LTrim(std::wstring &str, const std::wstring& chars = L" \t" )
 {
 #ifdef _CINIFILE_DEBUG
     std::wcout <<  L"LTrim()" << std::endl;
@@ -705,7 +704,7 @@ static void LTrim(std::wstring &str, const std::wstring& chars = L" \t" )
     str.erase(0, str.find_first_not_of(chars));
 }
 
-static void Trim( std::wstring& str , const std::wstring& chars = L" \t" )
+void Trim( std::wstring& str , const std::wstring& chars = L" \t" )
 {
 #ifdef _CINIFILE_DEBUG
     std::wcout <<  L"Trim()" << std::endl;
@@ -774,7 +773,7 @@ void CIniFileW::Save( std::wostream& output )
     }
 }
 
-bool CIniFileW::Save( const std::wstring& fileName )
+bool CIniFileW::Save( const std::wstring& fileName)
 {
 #ifdef _CINIFILE_DEBUG
     std::wcout <<  L"CIniFileW::Save() - " << fileName << std::endl;
@@ -788,6 +787,7 @@ bool CIniFileW::Save( const std::wstring& fileName )
 #if defined(_MSC_VER) && (_MSC_VER >= 1200) && (_MSC_VER < 1300)
     output.open( wstr_to_str(fileName).c_str() , std::ios::binary );
 #elif defined(_MSC_VER) && (_MSC_VER >= 1300)
+    output.imbue(std::locale(".936")); /*added by lanshh **/
     output.open( fileName.c_str() , std::ios::binary );
 #endif
 #endif
@@ -885,6 +885,7 @@ bool CIniFileW::Load(const std::wstring& fileName , bool bMerge )
 #if defined(_MSC_VER) && (_MSC_VER >= 1200) && (_MSC_VER < 1300)
     input.open( wstr_to_str(fileName).c_str() , std::ios::binary );
 #elif defined(_MSC_VER) && (_MSC_VER >= 1300)
+    input.imbue(std::locale(".936")); /*added by lanshh **/
     input.open( fileName.c_str() , std::ios::binary );
 #endif
 #endif

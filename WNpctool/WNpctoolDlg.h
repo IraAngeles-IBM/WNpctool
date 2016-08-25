@@ -16,6 +16,7 @@ using namespace cm;
 #include "ConfigMode.h"
 #include "afxcmn.h"
 #include "./XListBox/XListBox.h"
+#include "FontStatic/FontStatic.h"
 
 #define WM_COM_ADD		    1
 #define WM_COM_RM		    2
@@ -23,6 +24,13 @@ using namespace cm;
 #define LIST_EMPTY          4
 #define UPDATE_TEST_EXIT    5
 #define UPDATE_WINDOW		6
+#define UPDATE_PROMPT		7
+
+#define PROMPT_TESTING 1
+#define PROMPT_PASS 2
+#define PROMPT_FAIL 3
+#define PROMPT_EMPTY 4
+
 #define LIST_INFO 0
 #define LIST_TIME 1
 #define LIST_WARN 2
@@ -108,12 +116,17 @@ private:
 	HBITMAP         m_hRedLedBitmap;
 	//CConfigMode m_ConfigModeDlg;
 
+	CStatic		m_lblDevice;
+	CFontStatic m_lblPrompt;
+	CXListBox	m_listInfo;
+
 	BOOL    SaveWriteResultOnPass(BOOL,DWORD);
 	BOOL	LoadConfig();
 	VOID	InitUi();
 	BOOL	OnStartRead();
 	BOOL	OnStartWrite();
 	std::wstring GetLocalString(std::wstring strKey);
+	VOID    UpdateMenuItem();
 
 // й╣ож
 protected:
@@ -129,8 +142,12 @@ public:
 	BURNINGITEM_VECTOR m_arrayDownloadItem;
 	afx_msg void OnLogFolder();
 	afx_msg void OnClose();
-	CStatic m_lblDevice;
 	afx_msg void OnBnClickedBtnWrite();
 	afx_msg void OnSettingMode();
-	CXListBox m_listInfo;
+	afx_msg void OnUpdateSettingRead(CCmdUI *pCmdUI);
+	afx_msg void OnSettingRead();
+	afx_msg void OnLanguageChinese();
+	afx_msg void OnUpdateLanguageChinese(CCmdUI *pCmdUI);
+	afx_msg void OnLanguageEnglish();
+	afx_msg void OnUpdateLanguageEnglish(CCmdUI *pCmdUI);
 };

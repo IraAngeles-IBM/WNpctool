@@ -300,7 +300,7 @@ public:
     ~CIniFileW();
 
     // Used to save the data back to the file or your choice
-    bool Save( const std::wstring& fileName );
+    bool Save( const std::wstring& fileName);
 
     // Save data to an output stream
     void Save( std::wostream& output );

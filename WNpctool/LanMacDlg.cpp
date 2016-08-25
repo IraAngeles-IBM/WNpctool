@@ -138,7 +138,7 @@ BOOL CLanMacDlg::OnSaveConfig()
 				CompareNumString(m_Configs.LanMac.strCurrentMac.c_str(),m_Configs.LanMac.strStartMac.c_str())&&
 				CompareNumString(m_Configs.LanMac.strEndMac.c_str(),m_Configs.LanMac.strStartMac.c_str())))
 			{
-				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("WIFI MAC"));
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("LANMAC"));
 				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
 				return bResult;					
 			}

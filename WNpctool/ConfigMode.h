@@ -45,4 +45,5 @@ public:
 	afx_msg void OnBnClickedBtnModeApply();
 	afx_msg void OnBnClickedBtnModeOk();
 	afx_msg void OnTcnSelchangeTabSnmac(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedBtnModeCancel();
 };

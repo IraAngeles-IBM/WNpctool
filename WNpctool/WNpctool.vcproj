@@ -326,6 +326,14 @@
 			<File
 				RelativePath=".\settings\inifile.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\settings\inifile.h"
@@ -365,6 +373,26 @@
 			</File>
 			<File
 				RelativePath=".\XListBox\XListBox.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="FontStatic"
+			>
+			<File
+				RelativePath=".\FontStatic\FontStatic.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\FontStatic\FontStatic.h"
+				>
+			</File>
+			<File
+				RelativePath=".\FontStatic\Label.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\FontStatic\Label.h"
 				>
 			</File>
 		</Filter>

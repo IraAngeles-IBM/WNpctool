@@ -410,6 +410,10 @@ bool CIniSettingBase::SaveToolSetting(std::wstring strConfig)
         pIniFile    = new CIniFile;
     }
     if(pIniFile) {
+		//
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),nCurLan);
+		SetStr( TEXT("Language:Selected")          , szTemp1);
+
         SetStr( TEXT("System:LogPath")  , strLogPath);
         SetStr( TEXT("Debug")			, bDebug   ?checke:unckeck);
         SetStr( TEXT("READ")    		, bReadInfo ?checke:unckeck);

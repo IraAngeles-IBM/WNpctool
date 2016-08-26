@@ -17,6 +17,7 @@ using namespace cm;
 #include "afxcmn.h"
 #include "./XListBox/XListBox.h"
 #include "FontStatic/FontStatic.h"
+#include "debug.h"
 
 #define WM_COM_ADD		    1
 #define WM_COM_RM		    2
@@ -76,6 +77,7 @@ public:
 public:
 	CIniSettingBase m_Configs;
 	CIniLocalLan	m_LocalLan;
+
 	void			ScanDeviceProc();
 	BOOL			WriteProc();
 	BOOL			ReadProc();
@@ -88,7 +90,7 @@ private:
 	CString         m_strModulePath;
 	CString			m_strLogPath;
 	CString			m_strLoader;
-	cmLog			*m_pLogObject;
+	CLogger         *m_pLog;
 
 	CString         m_strCurDevSn;
 	CString         m_strCurWifiMac;

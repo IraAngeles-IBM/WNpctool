@@ -269,40 +269,6 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
         pIniFile = NULL;
         return false;
     }
-    szLan                   = GetStr(TEXT("CONFIG:Lan"));
-    nLogLevel               = _wtoi(GetStr(TEXT("LogLevel")).c_str());
-    //strLogPath              = GetStr(TEXT("LogPath"));
-    //bDebug                  = 1 == _wtoi(GetStr(TEXT("Debug")).c_str());
-    bOnlyAt                 = 1 == _wtoi(GetStr(TEXT("OnlyAt")).c_str());
-    bAutoTest               = 1 == _wtoi(GetStr(TEXT("AutoTest")).c_str());
-    bWideVine               = 1 == _wtoi(GetStr(TEXT("WideVine")).c_str());
-    bFuse                   = 1 == _wtoi(GetStr(TEXT("Fuse")).c_str());
-    bUseDB                  = 1 == _wtoi(GetStr(TEXT("UseDB")).c_str());
-#ifdef USER_LOGIN
-    bLogin                  = 1 == _wtoi(GetStr(TEXT("UseDBL")).c_str());
-    strLoginPwd             = DecryptPassWord(GetStr(TEXT("LoginPassword")));
-#endif
-    strXmlFileName          = GetStr(TEXT("XmlFileName"));
-    strFuseScriptFileName   = GetStr(TEXT("FuseFileName"));
-	strServer       		=GetStr(TEXT("DataBaseServer"));
-    strUserName     		=GetStr(TEXT("UserName"));
-    strPassword     		=DecryptPassWord(GetStr(TEXT("Password")));          /*do not save directory **/
-    strDataBaseTable		=GetStr(TEXT("DBTable"));
-    strDataBaseName 		=GetStr(TEXT("DBName"));
-    strPort         		=GetStr(TEXT("DBPort")); 
-
-    //nSnType                 =_wtoi(GetStr(TEXT("SnType")).c_str());
-    //if(2 <nSnType || 0 > nSnType )nSnType = 0;
-
-    //int nItemNum;
-    //nItemNum = FLAG_WVCNT;
-    //ParseStr(GetStr(TEXT("ItemMap")),strItemName,&nItemNum);
-    //if( FLAG_WVCNT != nItemNum) {
-    //    return false;
-    //}
-    //strFlagBusy = FLAG_BUSY;
-    //strFlagUnsd = FLAG_UNSD;
-    //strFlagUsed = FLAG_USED;
 	/********************** Language config **********************/
 	strLanPath			= GetStr(TEXT("Language:LangPath"));
 	nValue				= _wtoi(GetStr(TEXT("Selected")).c_str());
@@ -319,6 +285,8 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
 	strLogPath          = GetStr(TEXT("System:LogPath"));
 	bDebug              = 1 == _wtoi(GetStr(TEXT("Debug")).c_str());
 	bReadInfo			= 1 == _wtoi(GetStr(TEXT("READ")).c_str());
+	bAutoTest			= 1 == _wtoi(GetStr(TEXT("AUTO")).c_str());
+	nLogLevel           = _wtoi(GetStr(TEXT("LogLevel")).c_str());
 	/********************** DevSn **********************/
 	devsn.bEnable		= _wtoi(GetStr(TEXT("DSWR")).c_str());
 	devsn.strPrefix		= GetStr(TEXT("DSPF"));
@@ -417,6 +385,8 @@ bool CIniSettingBase::SaveToolSetting(std::wstring strConfig)
         SetStr( TEXT("System:LogPath")  , strLogPath);
         SetStr( TEXT("Debug")			, bDebug   ?checke:unckeck);
         SetStr( TEXT("READ")    		, bReadInfo ?checke:unckeck);
+		SetStr( TEXT("AUTO")    		, bAutoTest ?checke:unckeck);
+
         SetStr( TEXT("DSWR")    		, devsn.bEnable ?checke:unckeck);
         SetStr( TEXT("DSPF")        	, devsn.strPrefix);
         SetStr( TEXT("DSSF")        	, devsn.strSuffix);

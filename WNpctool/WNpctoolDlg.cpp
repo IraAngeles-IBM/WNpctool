@@ -144,13 +144,6 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	m_hRedLedBitmap     = LoadBitmap(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDB_BMP_REDLED));
 	m_hGreenLedBitmap   = LoadBitmap(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDB_BMP_GREENLED));
 	m_strModulePath     = cmPath::GetModulePath();
-	m_strLogPath = m_strModulePath + _T("Log\\");
-
-
-	if ( !cmFile::IsExisted(m_strLogPath) )
-	{
-		CreateDirectory(m_strLogPath,NULL);
-	}
 
 	m_bUpgradeDllInitOK = FALSE;
 	m_bTerminated = FALSE;
@@ -163,6 +156,19 @@ BOOL CWNpctoolDlg::OnInitDialog()
 		INIT_DEV_INFO InitDevInfo;
 		INIT_LOG_INFO InitLogInfo;
 		INIT_CALLBACK_INFO InitCallbackInfo;
+		if (m_Configs.strLogPath.empty())
+		{
+			m_Configs.strLogPath=m_strModulePath + _T("Log\\");
+			m_strLogPath = m_Configs.strLogPath.c_str();
+		}
+		else
+		{
+			m_strLogPath = m_Configs.strLogPath.c_str();
+		}
+		if ( !cmFile::IsExisted(m_strLogPath) )
+		{
+			CreateDirectory(m_strLogPath,NULL);
+		}
 
 		InitDevInfo.bScan4FsUsb = FALSE;
 		InitDevInfo.emSupportDevice = 0;
@@ -193,24 +199,16 @@ BOOL CWNpctoolDlg::OnInitDialog()
 		MessageBox(_T("Loading config file failed!"),_T("ERROR"),MB_ICONERROR|MB_OK);
 		exit(-1);
 	}
-	if (m_Configs.strLogPath.empty())
-	{
-		m_Configs.strLogPath=m_strModulePath + _T("Log\\");
+
+	CString strTitle;
+	GetWindowText(strTitle);
+	
+	if(m_Configs.nLogLevel != DLEVEL_NONE ) {
+		CLogger::DEBUG_LEVEL level = m_Configs.nLogLevel == DLEVEL_DEBUG?CLogger::DEBUG_ALL:
+			(m_Configs.nLogLevel  == DLEVEL_INFO ?CLogger::DEBUG_INFO:CLogger::DEBUG_ERROR);
+		m_pLog = CLogger::StartLog((m_Configs.strLogPath + CLogger::TimeStr(true, true)).c_str(), level);    
 	}
-	BOOL bRet;
-	m_pLogObject = new cmLog(m_strLogPath,bRet);
-	if (bRet)
-	{
-		m_pLogObject->LogFileName = _T("AppLog");
-	}
-	else
-	{
-		if (m_pLogObject)
-		{
-			delete m_pLogObject;
-			m_pLogObject = NULL;
-		}
-	}
+	LDEGMSGW((CLogger::DEBUG_INFO, _T("%s start run"),(LPCTSTR)strTitle));
 	InitUi();
 
 
@@ -350,19 +348,11 @@ BOOL CWNpctoolDlg::LoadConfig()
 	strConfigPath = m_strModulePath + _T("config.ini");
 	if (!cmFile::IsExisted(strConfigPath))
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:LoadConfig-->config.ini PathFileExists failed."));
-		}
 		return FALSE;
 	}
 	bool bLoadConfig = m_Configs.LoadToolSetting(strConfigPath.GetString());
 	if (!bLoadConfig)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("LoadConfig-->Load file failed"));
-		}
 		return FALSE;
 	}
 	strConfigPath = m_strModulePath + m_Configs.strLanPath.c_str();
@@ -376,28 +366,18 @@ BOOL CWNpctoolDlg::LoadConfig()
 	}
 	if (!cmFile::IsExisted(strConfigPath))
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:LoadConfig-->Language config PathFileExists failed."));
-		}
 		return FALSE;
 	}
 	bLoadConfig = m_LocalLan.LoadToolSetting(strConfigPath.GetString());
-	//bLoadConfig = m_LocalLan.LoadToolSetting((LPCTSTR)(m_strModulePath +TEXT("Language\\") + m_Configs.strCnFilename.c_str()));
 	m_LocalLan.TreeControls(m_hWnd,m_Configs.bDebug?TRUE:FALSE,this->IDD,true);
 	if (!bLoadConfig)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("LoadConfig-->Load Language file failed"));
-		}
-		//AfxMessageBox(_T("11111111111111"));
 		return FALSE;
 	}
 	if(!m_Configs.bDebug) {
 		WalkMenu(GetMenu(),TEXT("MENU"));
 	}
-	GetLocalString(TEXT("LANG:IDS_APPNAME"));
+	GetLocalString(TEXT("LANG:IDS_TEXT_APPNAME"));
 	return TRUE;
 }
 VOID CWNpctoolDlg::WalkMenu(CMenu *pMenu,CString strMainKeyPart)
@@ -533,11 +513,10 @@ void CWNpctoolDlg::OnClose()
 		delete m_pScanEvent;
 		m_pScanEvent = NULL;
 	}
-
-	if (m_pLogObject)
+	if (m_pLog)
 	{
-		delete m_pLogObject;
-		m_pLogObject = NULL;
+		delete m_pLog;
+		m_pLog = NULL;
 	}
 	if (m_bUpgradeDllInitOK)
 	{
@@ -553,6 +532,7 @@ void CWNpctoolDlg::OnClose()
 		m_hGreenLedBitmap = NULL;
 	}
 
+	m_Configs.SaveToolSetting(std::wstring(_T("")));
 	CDialog::OnClose();
 }
 
@@ -564,6 +544,8 @@ BOOL CWNpctoolDlg::WriteProc()
 	bool            bskip_force_devsn   = FALSE;
 	bool            bskip_force_lanmac  = FALSE;
 	CString         strPrompt;
+	DWORD   dwTotalTick;
+	dwTotalTick     = GetTickCount();
 
 	if (m_listInfo.GetCount()>0) {
 		PostMessage(WM_UPDATE_MSG,UPDATE_LIST,LIST_EMPTY);
@@ -581,7 +563,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_SN))
 		{
-			m_pLogObject->Record(_T("Write SN failed."));
+			LDEGMSG((CLogger::DEBUG_ERROR,"Write SN failed."));
 			AddPrompt(GetLocalString(_T("IDS_ERROR_SN_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
@@ -599,7 +581,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_WIFIMAC))
 		{
-			m_pLogObject->Record(_T("Write WifiMac failed."));
+			LDEGMSG((CLogger::DEBUG_ERROR,"Write WifiMac failed."));
 			AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
@@ -617,7 +599,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_BTMAC))
 		{
-			m_pLogObject->Record(_T("Write BtMac failed."));
+			LDEGMSG((CLogger::DEBUG_ERROR,"Write BtMac failed."));
 			AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
@@ -635,7 +617,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		AddPrompt(strPrompt,LIST_INFO);
 		if(!WriteItem(ITEM_LANMAC))
 		{
-			m_pLogObject->Record(_T("Write LanMac failed."));
+			LDEGMSG((CLogger::DEBUG_ERROR,"Write LanMac failed."));
 			AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_FAIL")).c_str(),LIST_ERR);
 			goto WriteProc_Exit;
 		}
@@ -651,7 +633,6 @@ WriteProc_Exit:
 			((bskip_force_btmac)  ?0:FIELD_BTMAC  )|
 			((bskip_force_lanmac)  ?0:FIELD_LANMAC));
 	}
-	//EnableCtrl();
 	if (m_bUserStop) {
 		strPrompt.Format(GetLocalString(_T("IDS_INFO_USER_ABORT")).c_str());
 		AddPrompt(strPrompt,LIST_ERR);
@@ -659,17 +640,14 @@ WriteProc_Exit:
 	if(m_bUserStop) {
 		PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_EMPTY);
 	} else if (bSuccess) {
-		InitUi();
+		//InitUi();
 		PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_PASS);
 	} else {
 		PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_FAIL);
 	}
-	//if (bSuccess)
-	//{
-	//	MessageBox(_T("Burning OK."),_T("Info"),MB_OK|MB_ICONINFORMATION);
-	//}
-	//else
-	//	MessageBox(_T("Burning Failed."),_T("Error"),MB_OK|MB_ICONERROR);
+	strPrompt.Format(GetLocalString(_T("IDS_INFO_TIME_ELAPSE")).c_str(),(GetTickCount() - dwTotalTick )/1000,(GetTickCount() - dwTotalTick )%1000);
+	AddPrompt(strPrompt,LIST_TIME);
+	SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
 	m_pWriteThread = NULL;
 	/*exit will set button status,so we must set m_pWorkThread = NULL before **/
 	if (!m_Configs.bAutoTest||m_bUserStop) {
@@ -709,19 +687,13 @@ BOOL CWNpctoolDlg::WriteItem(int nItemID)
 	}
 	if (!bRet)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:convert value failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"convert value failed."));
 		return FALSE;
 	}
 	bRet = RK_WriteProvisioningData(nItemID,(PBYTE)lpszData,nSize);		
 	if (!bRet)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:RK_WriteProvisioningData failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData failed."));
 		return FALSE;
 	}
 	//¶ÁÈ¡devsn
@@ -729,18 +701,12 @@ BOOL CWNpctoolDlg::WriteItem(int nItemID)
 	bRet = RK_ReadProvisioningData(nItemID,readback,nReadbackSize);
 	if (!bRet)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:RK_WriteProvisioningData readback failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData readback failed."));
 		return FALSE;
 	}
 	if (memcmp(readback,lpszData,nSize)!=0)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:RK_WriteProvisioningData compare failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData compare failed."));
 		return FALSE;
 	}
 	if (lpszData)
@@ -762,10 +728,7 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 	bRet = RK_ReadProvisioningData(nItemID,buf,nBufSize);
 	if (!bRet)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:RK_ReadProvisioningData failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_ReadProvisioningData failed."));
 		return FALSE;
 	}
 	//if (nBufSize==0)
@@ -782,10 +745,7 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 	}
 	if (!bRet)
 	{
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:convert value failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"convert value failed."));
 		return FALSE;
 	}
 	if (ITEM_SN == nItemID)
@@ -816,6 +776,8 @@ BOOL CWNpctoolDlg::ReadProc()
 {
 	BOOL bSuccess=FALSE;
 	CString strPrompt;
+	DWORD   dwTotalTick;
+	dwTotalTick     = GetTickCount();
 	if (m_listInfo.GetCount()>0) {
 		PostMessage(WM_UPDATE_MSG,UPDATE_LIST,LIST_EMPTY);
 	}
@@ -828,19 +790,13 @@ BOOL CWNpctoolDlg::ReadProc()
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("SN"));
 		AddPrompt(strPrompt,LIST_INFO);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read SN successfully\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_INFO,"Read SN successfully."));
 	}
 	else
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("SN"));
 		AddPrompt(strPrompt,LIST_ERR);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read SN failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"Read SN failed."));
 		goto Exit_Read;
 	}
 
@@ -850,19 +806,13 @@ BOOL CWNpctoolDlg::ReadProc()
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("WIFIMAC"));
 		AddPrompt(strPrompt,LIST_INFO);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read WifiMac successfully\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_INFO,"Read WifiMac successfully."));
 	}
 	else
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("WIFIMAC"));
 		AddPrompt(strPrompt,LIST_ERR);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read WifiMac failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"Read WifiMac failed."));
 		goto Exit_Read;
 	}
 
@@ -872,19 +822,13 @@ BOOL CWNpctoolDlg::ReadProc()
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("BTMAC"));
 		AddPrompt(strPrompt,LIST_INFO);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read BtMac successfully\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_INFO,"Read BtMac successfully."));
 	}
 	else
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("BTMAC"));
 		AddPrompt(strPrompt,LIST_ERR);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read BtMac failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"Read BtMac failed."));
 		goto Exit_Read;
 	}
 
@@ -894,19 +838,13 @@ BOOL CWNpctoolDlg::ReadProc()
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("LANMAC"));
 		AddPrompt(strPrompt,LIST_INFO);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read LanMac successfully\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_INFO,"Read LanMac successfully."));
 	}
 	else
 	{
 		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("LANMAC"));
 		AddPrompt(strPrompt,LIST_ERR);
-		if (m_pLogObject)
-		{
-			m_pLogObject->Record(_T("Error:Read LanMac failed\r\n."));
-		}
+		LDEGMSG((CLogger::DEBUG_ERROR,"Read LanMac failed."));
 		goto Exit_Read;
 	}
 	bSuccess = TRUE;
@@ -917,6 +855,7 @@ Exit_Read:
 		AddPrompt(strPrompt,LIST_ERR);
 	}
 	//EnableCtrl();
+	SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
 	if(m_bUserStop) {
 		PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_EMPTY);
 	} else if (bSuccess) {
@@ -924,6 +863,8 @@ Exit_Read:
 	} else {
 		PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_FAIL);
 	}
+	strPrompt.Format(GetLocalString(_T("IDS_INFO_TIME_ELAPSE")).c_str(),(GetTickCount() - dwTotalTick )/1000,(GetTickCount() - dwTotalTick )%1000);
+	AddPrompt(strPrompt,LIST_TIME);
 	m_pReadThread = NULL;
 	/*exit will set button status,so we must set m_pWorkThread = NULL before **/
 	if (!m_Configs.bAutoTest||m_bUserStop) {
@@ -932,7 +873,6 @@ Exit_Read:
 		}
 		PostMessage(WM_UPDATE_MSG,UPDATE_TEST_EXIT);
 	}
-
 	return bSuccess;
 }
 BOOL CWNpctoolDlg::SaveWriteResultOnPass(BOOL bPass,DWORD mask)

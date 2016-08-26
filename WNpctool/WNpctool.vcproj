@@ -200,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\debug.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\LanMacDlg.cpp"
 				>
 			</File>
@@ -259,6 +263,10 @@
 			</File>
 			<File
 				RelativePath=".\ConfigMode.h"
+				>
+			</File>
+			<File
+				RelativePath=".\debug.h"
 				>
 			</File>
 			<File

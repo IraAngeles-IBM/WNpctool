@@ -146,22 +146,22 @@ public:
 
     std::wstring EncryptPassWord(std::wstring plaintext);
     std::wstring DecryptPassWord(std::wstring ciphertext);
-    unsigned int GetIpv4()
-    {
-        unsigned int IPV4;
-        ParseIp(strServer,&IPV4);
-        return IPV4;
-    }
-    void SetIpv4(unsigned int IPV4)
-    {
-        TCHAR strIP[32] = {0};
-        unsigned char ip0 = IPV4&0xff;
-        unsigned char ip1 = (IPV4>>8)&0xff;
-        unsigned char ip2 = (IPV4>>16)&0xff;
-        unsigned char ip3 = (IPV4>>24)&0xff;
-        swprintf(strIP,32,TEXT("%d.%d.%d.%d"),ip3,ip2,ip1,ip0);
-        strServer = strIP;
-    }
+    //unsigned int GetIpv4()
+    //{
+    //    unsigned int IPV4;
+    //    ParseIp(strServer,&IPV4);
+    //    return IPV4;
+    //}
+    //void SetIpv4(unsigned int IPV4)
+    //{
+    //    TCHAR strIP[32] = {0};
+    //    unsigned char ip0 = IPV4&0xff;
+    //    unsigned char ip1 = (IPV4>>8)&0xff;
+    //    unsigned char ip2 = (IPV4>>16)&0xff;
+    //    unsigned char ip3 = (IPV4>>24)&0xff;
+    //    swprintf(strIP,32,TEXT("%d.%d.%d.%d"),ip3,ip2,ip1,ip0);
+    //    strServer = strIP;
+    //}
 public:
 	STRUCT_MAC_CONFIG       WifiMac;
 	STRUCT_MAC_CONFIG       BtMac;
@@ -180,38 +180,10 @@ public:
 	int						nCnFontSize;
 	int						nEnFontSize;
     bool					bDebug;	
+	int						nLogLevel;
+	std::wstring			strLogPath;
 
-    std::wstring szLan;
-    int          nLogLevel;
-    std::wstring strLogPath;
-
-    bool         bOnlyAt;
     bool         bAutoTest;
-    bool         bWideVine;
-    bool         bFuse;
-    std::wstring strXmlFileName;
-    std::wstring strFuseScriptFileName;
-    /*data base config **/
-    bool         bUseDB;
-    std::wstring strPort;
-    std::wstring strServer;
-    std::wstring strUserName;
-    std::wstring strPassword;
-    std::wstring strDataBaseTable;
-    std::wstring strDataBaseName;
-
-    std::wstring strSupportDatabse[6];
-    int          nSupportDatabse;
-    int          nDataBaseType; /*ms sql access and so on **/
-#ifdef USER_LOGIN
-    bool         bLogin;
-    std::wstring strLoginPwd;
-#endif
-    int          nSnType;  /*0:dev_sn 1:pcb_sn 2:hw_sn**/
-    bool         bItemUsed[5];
-    std::wstring strItemName[5];
-    /*std::wstring strItemFlag[5]; **/
-    std::wstring strFlagBusy,strFlagUnsd,strFlagUsed;
 };
 class CIniLocalLan:public CSettingBase
 {

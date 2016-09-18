@@ -33,6 +33,9 @@ BEGIN_MESSAGE_MAP(CSnDlg, CDialog)
 	ON_BN_CLICKED(IDC_RADIO_AUTO_DEVSN, &CSnDlg::OnBnClickedRadioAutoDevsn)
 	ON_BN_CLICKED(IDC_CHECK_SN_SELECT, &CSnDlg::OnBnClickedCheckSnSelect)
 	ON_EN_SETFOCUS(IDC_EDIT_DEVSN_SEGMENT_COUNT, &CSnDlg::OnEnSetfocusEditDevsnSegmentCount)
+	ON_EN_KILLFOCUS(IDC_EDIT_DEVSN_SEGMENT_START, &CSnDlg::OnEnKillfocusEditDevsnSegmentStart)
+	ON_EN_KILLFOCUS(IDC_EDIT_DEVSN_PREFIX, &CSnDlg::OnEnKillfocusEditDevsnPrefix)
+	ON_BN_CLICKED(IDC_BUTTON_DEVSN_FILE_PATH, &CSnDlg::OnBnClickedButtonDevsnFilePath)
 END_MESSAGE_MAP()
 
 
@@ -126,6 +129,7 @@ void CSnDlg::OnBnClickedRadioAutoDevsn()
 BOOL CSnDlg::OnSaveConfig()
 {
 	CString strValue,strValue2;
+	CString strStartSn,strCurrentSn,strEndSn;
 	CString strPrompt;
 	BOOL    bResult=FALSE;
 	UpdateData(TRUE);
@@ -149,19 +153,55 @@ BOOL CSnDlg::OnSaveConfig()
 		}
 		if (MODE_AUTO == m_Configs.devsn.nAutoMode) {
 			GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_START,strValue);
-			m_Configs.devsn.strStartSn = strValue;
+			strStartSn = strValue;
 			GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_END,strValue);
-			m_Configs.devsn.strEndSn = strValue;
+			strEndSn = strValue;
 			GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_CURRENT,strValue);
-			m_Configs.devsn.strCurrentSn = strValue;
-			if (!(CompareNumString(m_Configs.devsn.strEndSn.c_str(),m_Configs.devsn.strCurrentSn.c_str())&&
-				CompareNumString(m_Configs.devsn.strCurrentSn.c_str(),m_Configs.devsn.strStartSn.c_str())&&
-				CompareNumString(m_Configs.devsn.strEndSn.c_str(),m_Configs.devsn.strStartSn.c_str())))
+			strCurrentSn = strValue;
+			if (!m_Configs.devsn.strPrefix.empty())
+			{
+				if (strStartSn.Left(m_Configs.devsn.strPrefix.length()).Compare(m_Configs.devsn.strPrefix.c_str())!=0)
+				{
+					strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("DEV SN"));
+					MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+					GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_START)->SetFocus();
+					return bResult;
+				}
+				if (strCurrentSn.Left(m_Configs.devsn.strPrefix.length()).Compare(m_Configs.devsn.strPrefix.c_str())!=0)
+				{
+					strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_CURRENT")).c_str(),TEXT("DEV SN"));
+					MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+					GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_CURRENT)->SetFocus();
+					return bResult;
+				}
+				if (strEndSn.Left(m_Configs.devsn.strPrefix.length()).Compare(m_Configs.devsn.strPrefix.c_str())!=0)
+				{
+					strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_END")).c_str(),TEXT("DEV SN"));
+					MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+					GetDlgItem(IDC_EDIT_DEVSN_SEGMENT_END)->SetFocus();
+					return bResult;
+				}
+			}
+			if (!m_Configs.devsn.strSuffix.empty())
+			{
+				if (strStartSn.Right(m_Configs.devsn.strSuffix.length()).Compare(m_Configs.devsn.strSuffix.c_str())!=0)
+				{
+					strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("DEV SN"));
+					MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+					return bResult;
+				}
+			}
+			if (!(CompareNumString(strEndSn,strCurrentSn)&&
+				CompareNumString(strCurrentSn,strStartSn)&&
+				CompareNumString(strEndSn,strStartSn)))
 			{
 				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("DEV SN"));
 				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
 				return bResult;					
 			}
+			m_Configs.devsn.strStartSn = strStartSn;
+			m_Configs.devsn.strCurrentSn = strCurrentSn;
+			m_Configs.devsn.strEndSn = strEndSn;
 			strValue = m_Configs.devsn.strEndSn.c_str();
 			strValue2 = m_Configs.devsn.strCurrentSn.c_str();
 			m_Configs.devsn.nRemainCount    = cmNumString::StrToSLong(strValue.Right(6),16) - cmNumString::StrToSLong(strValue2.Right(6),16) + 1;
@@ -212,4 +252,55 @@ void CSnDlg::OnEnSetfocusEditDevsnSegmentCount()
 
 	nCount = cmNumString::StrToSLong(strEndSN.Right(6),16) - cmNumString::StrToSLong(strStartSN.Right(6),16) + 1;
 	SetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
+}
+
+void CSnDlg::OnEnKillfocusEditDevsnSegmentStart()
+{
+	// TODO: Add your control notification handler code here
+	//CString strValue,strPrefix,strSuffix,strPrompt;
+	//GetDlgItemText(IDC_EDIT_DEVSN_PREFIX,strPrefix);
+	//GetDlgItemText(IDC_EDIT_DEVSN_SUFFIX,strSuffix);
+	//GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_START,strValue);
+	//if (!strPrefix.IsEmpty())
+	//{
+	//	if (strValue.Left(strPrefix.GetLength()).Compare(strPrefix)!=0)
+	//	{
+	//		strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("DEV SN"));
+	//		MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+	//		return;
+	//	}
+	//}
+	//if (!strSuffix.IsEmpty())
+	//{
+	//	if (strValue.Right(strSuffix.GetLength()).Compare(strSuffix)!=0)
+	//	{
+	//		strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("DEV SN"));
+	//		MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+	//		return ;
+	//	}
+	//}
+
+}
+
+void CSnDlg::OnEnKillfocusEditDevsnPrefix()
+{
+	// TODO: Add your control notification handler code here
+	//CString strValue,strPrefix,strSuffix,strPrompt;
+	//GetDlgItemText(IDC_EDIT_DEVSN_PREFIX,strPrefix);
+	//GetDlgItemText(IDC_EDIT_DEVSN_SUFFIX,strSuffix);
+	//GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_START,strValue);
+	//if (!strPrefix.IsEmpty())
+	//{
+	//	if (strValue.Left(strPrefix.GetLength()).Compare(strPrefix)!=0)
+	//	{
+	//		strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("DEV SN"));
+	//		MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+	//		return;
+	//	}
+	//}
+}
+
+void CSnDlg::OnBnClickedButtonDevsnFilePath()
+{
+	// TODO: Add your control notification handler code here
 }

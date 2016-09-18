@@ -7,7 +7,6 @@
 #define IDD_ABOUTBOX                    100
 #define IDS_ABOUTBOX                    101
 #define IDD_WNPCTOOL_DIALOG             102
-#define IDR_MAINFRAME                   128
 #define IDR_MAINMENU                    129
 #define IDD_DIALOG_MODE                 130
 #define IDD_DIALOG_SN                   131
@@ -16,6 +15,8 @@
 #define IDD_DIALOG_LANMAC               133
 #define IDB_BMP_REDLED                  133
 #define IDD_DIALOG_BTMAC                134
+#define IDI_ICON1                       134
+#define IDR_WNFRAME                     134
 #define IDC_CB_DEVICES                  1000
 #define ID_BTN_WRITE                    1001
 #define IDC_STATIC_SN                   1002
@@ -125,7 +126,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        134
+#define _APS_NEXT_RESOURCE_VALUE        135
 #define _APS_NEXT_COMMAND_VALUE         32780
 #define _APS_NEXT_CONTROL_VALUE         1095
 #define _APS_NEXT_SYMED_VALUE           101

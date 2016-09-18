@@ -33,4 +33,7 @@ public:
 	afx_msg void OnBnClickedRadioAutoDevsn();
 	afx_msg void OnBnClickedCheckSnSelect();
 	afx_msg void OnEnSetfocusEditDevsnSegmentCount();
+	afx_msg void OnEnKillfocusEditDevsnSegmentStart();
+	afx_msg void OnEnKillfocusEditDevsnPrefix();
+	afx_msg void OnBnClickedButtonDevsnFilePath();
 };

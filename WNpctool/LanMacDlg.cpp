@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "WNpctool.h"
 #include "LanMacDlg.h"
+#include "cmfuns.h"
 #include "cmNumString.h"
 using namespace cm;
 
@@ -110,6 +111,7 @@ void CLanMacDlg::OnBnClickedRadioAutoLanmac()
 BOOL CLanMacDlg::OnSaveConfig()
 {
 	CString strValue,strValue2;
+	CString strStartMac,strCurrentMac,strEndMac;
 	CString strPrompt;
 	BOOL    bResult=FALSE;
 	UpdateData(TRUE);
@@ -129,19 +131,44 @@ BOOL CLanMacDlg::OnSaveConfig()
 		}
 		if (MODE_AUTO == m_Configs.LanMac.nAutoMode) {
 			GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_START,strValue);
-			m_Configs.LanMac.strStartMac = strValue;
+			strStartMac = strValue;
 			GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_END,strValue);
-			m_Configs.LanMac.strEndMac = strValue;
+			strEndMac = strValue;
 			GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_CURRENT,strValue);
-			m_Configs.LanMac.strCurrentMac = strValue;
-			if (!(CompareNumString(m_Configs.LanMac.strEndMac.c_str(),m_Configs.LanMac.strCurrentMac.c_str())&&
-				CompareNumString(m_Configs.LanMac.strCurrentMac.c_str(),m_Configs.LanMac.strStartMac.c_str())&&
-				CompareNumString(m_Configs.LanMac.strEndMac.c_str(),m_Configs.LanMac.strStartMac.c_str())))
+			strCurrentMac = strValue;
+			if (!CheckMacStr(strStartMac))
 			{
-				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("LANMAC"));
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("LAN MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_START)->SetFocus();
+				return bResult;
+			}
+			if (!CheckMacStr(strCurrentMac))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_CURRENT")).c_str(),TEXT("LAN MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_CURRENT)->SetFocus();
+				return bResult;
+			}
+			if (!CheckMacStr(strEndMac))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_CURRENT")).c_str(),TEXT("LAN MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_LANMAC_SEGMENT_END)->SetFocus();
+				return bResult;
+			}
+
+			if (!(CompareNumString(strEndMac,strCurrentMac)&&
+				CompareNumString(strCurrentMac,strStartMac)&&
+				CompareNumString(strEndMac,strStartMac)))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("LAN MAC"));
 				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
 				return bResult;					
 			}
+			m_Configs.LanMac.strStartMac = strStartMac;
+			m_Configs.LanMac.strCurrentMac = strCurrentMac;
+			m_Configs.LanMac.strEndMac = strEndMac;
 			strValue = m_Configs.LanMac.strEndMac.c_str();
 			strValue2 = m_Configs.LanMac.strCurrentMac.c_str();
 			m_Configs.LanMac.nRemainCount    = cmNumString::StrToSLong(strValue.Right(6),16) - cmNumString::StrToSLong(strValue2.Right(6),16) + 1;

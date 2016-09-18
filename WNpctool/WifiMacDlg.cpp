@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "WNpctool.h"
 #include "WifiMacDlg.h"
+#include "cmfuns.h"
 #include "cmNumString.h"
 using namespace cm;
 
@@ -110,6 +111,7 @@ void CWifiMacDlg::OnBnClickedRadioAutoWifimac()
 BOOL CWifiMacDlg::OnSaveConfig()
 {
 	CString strValue,strValue2;
+	CString strStartMac,strCurrentMac,strEndMac;
 	CString strPrompt;
 	BOOL    bResult=FALSE;
 	UpdateData(TRUE);
@@ -129,19 +131,45 @@ BOOL CWifiMacDlg::OnSaveConfig()
 		}
 		if (MODE_AUTO == m_Configs.WifiMac.nAutoMode) {
 			GetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_START,strValue);
-			m_Configs.WifiMac.strStartMac = strValue;
+			strStartMac = strValue;
 			GetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_END,strValue);
-			m_Configs.WifiMac.strEndMac = strValue;
+			strEndMac = strValue;
 			GetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_CURRENT,strValue);
-			m_Configs.WifiMac.strCurrentMac = strValue;
-			if (!(CompareNumString(m_Configs.WifiMac.strEndMac.c_str(),m_Configs.WifiMac.strCurrentMac.c_str())&&
-				CompareNumString(m_Configs.WifiMac.strCurrentMac.c_str(),m_Configs.WifiMac.strStartMac.c_str())&&
-				CompareNumString(m_Configs.WifiMac.strEndMac.c_str(),m_Configs.WifiMac.strStartMac.c_str())))
+			strCurrentMac = strValue;
+
+			if (!CheckMacStr(strStartMac))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("WIFI MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_START)->SetFocus();
+				return bResult;
+			}
+			if (!CheckMacStr(strCurrentMac))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_CURRENT")).c_str(),TEXT("WIFI MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_CURRENT)->SetFocus();
+				return bResult;
+			}
+			if (!CheckMacStr(strEndMac))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_CURRENT")).c_str(),TEXT("WIFI MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_WIFIMAC_SEGMENT_END)->SetFocus();
+				return bResult;
+			}
+
+			if (!(CompareNumString(strEndMac,strCurrentMac)&&
+				CompareNumString(strCurrentMac,strStartMac)&&
+				CompareNumString(strEndMac,strStartMac)))
 			{
 				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("WIFI MAC"));
 				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
 				return bResult;					
 			}
+			m_Configs.WifiMac.strStartMac = strStartMac;
+			m_Configs.WifiMac.strCurrentMac = strCurrentMac;
+			m_Configs.WifiMac.strEndMac = strEndMac;
 			strValue = m_Configs.WifiMac.strEndMac.c_str();
 			strValue2 = m_Configs.WifiMac.strCurrentMac.c_str();
 			m_Configs.WifiMac.nRemainCount    = cmNumString::StrToSLong(strValue.Right(6),16) - cmNumString::StrToSLong(strValue2.Right(6),16) + 1;

@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "WNpctool.h"
 #include "BtMacDlg.h"
+#include "cmfuns.h"
 #include "cmNumString.h"
 using namespace cm;
 
@@ -111,6 +112,7 @@ void CBtMacDlg::OnBnClickedRadioAutoBtmac()
 BOOL CBtMacDlg::OnSaveConfig()
 {
 	CString strValue,strValue2;
+	CString strStartMac,strCurrentMac,strEndMac;
 	CString strPrompt;
 	BOOL    bResult=FALSE;
 	UpdateData(TRUE);
@@ -130,19 +132,44 @@ BOOL CBtMacDlg::OnSaveConfig()
 		}
 		if (MODE_AUTO == m_Configs.BtMac.nAutoMode) {
 			GetDlgItemText(IDC_EDIT_BTMAC_SEGMENT_START,strValue);
-			m_Configs.BtMac.strStartMac = strValue;
+			strStartMac = strValue;
 			GetDlgItemText(IDC_EDIT_BTMAC_SEGMENT_END,strValue);
-			m_Configs.BtMac.strEndMac = strValue;
+			strEndMac = strValue;
 			GetDlgItemText(IDC_EDIT_BTMAC_SEGMENT_CURRENT,strValue);
-			m_Configs.BtMac.strCurrentMac = strValue;
-			if (!(CompareNumString(m_Configs.BtMac.strEndMac.c_str(),m_Configs.BtMac.strCurrentMac.c_str())&&
-				CompareNumString(m_Configs.BtMac.strCurrentMac.c_str(),m_Configs.BtMac.strStartMac.c_str())&&
-				CompareNumString(m_Configs.BtMac.strEndMac.c_str(),m_Configs.BtMac.strStartMac.c_str())))
+			strCurrentMac = strValue;
+			if (!CheckMacStr(strStartMac))
 			{
-				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("BTMAC"));
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_START")).c_str(),TEXT("BT MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_START)->SetFocus();
+				return bResult;
+			}
+			if (!CheckMacStr(strCurrentMac))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_CURRENT")).c_str(),TEXT("BT MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_CURRENT)->SetFocus();
+				return bResult;
+			}
+			if (!CheckMacStr(strEndMac))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_SS_SEGMENT_CURRENT")).c_str(),TEXT("BT MAC"));
+				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
+				GetDlgItem(IDC_EDIT_BTMAC_SEGMENT_END)->SetFocus();
+				return bResult;
+			}
+			
+			if (!(CompareNumString(strEndMac,strCurrentMac)&&
+				CompareNumString(strCurrentMac,strStartMac)&&
+				CompareNumString(strEndMac,strStartMac)))
+			{
+				strPrompt.Format(GetLocalString(_T("IDS_ERROR_MAC_SEGMENT")).c_str(),TEXT("BT MAC"));
 				MessageBox(strPrompt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_ICONERROR|MB_OK);
 				return bResult;					
 			}
+			m_Configs.BtMac.strStartMac = strStartMac;
+			m_Configs.BtMac.strCurrentMac = strCurrentMac;
+			m_Configs.BtMac.strEndMac = strEndMac;
 			strValue = m_Configs.BtMac.strEndMac.c_str();
 			strValue2 = m_Configs.BtMac.strCurrentMac.c_str();
 			m_Configs.BtMac.nRemainCount    = cmNumString::StrToSLong(strValue.Right(6),16) - cmNumString::StrToSLong(strValue2.Right(6),16) + 1;

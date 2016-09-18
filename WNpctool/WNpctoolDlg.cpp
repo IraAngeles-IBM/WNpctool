@@ -70,7 +70,7 @@ CWNpctoolDlg::CWNpctoolDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CWNpctoolDlg::IDD, pParent)/*,m_ConfigModeDlg(m_Configs,m_LocalLan)*/,
 	m_bStarWrite(FALSE),m_bStarRead(FALSE),m_pWriteThread(NULL),m_pReadThread(NULL)
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_WNFRAME);
 }
 
 void CWNpctoolDlg::DoDataExchange(CDataExchange* pDX)
@@ -663,7 +663,7 @@ BOOL CWNpctoolDlg::WriteItem(int nItemID)
 	BOOL bRet;
 	LPSTR lpszData=NULL;
 	BYTE readback[512];
-	USHORT nReadbackSize;
+	USHORT nReadbackSize = 30;
 	int nSize;
 
 	//1.烧写devsn,先写后读，读出来的值与写进去的值一致则成功，否则失败
@@ -784,69 +784,81 @@ BOOL CWNpctoolDlg::ReadProc()
 
 	AddPrompt(GetLocalString(_T("IDS_READ_START")).c_str(),LIST_INFO);
 
-	strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("SN"));
-	AddPrompt(strPrompt,LIST_INFO);
-	if (ReadItem(ITEM_SN))
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("SN"));
-		AddPrompt(strPrompt,LIST_INFO);
-		LDEGMSG((CLogger::DEBUG_INFO,"Read SN successfully."));
-	}
-	else
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("SN"));
-		AddPrompt(strPrompt,LIST_ERR);
-		LDEGMSG((CLogger::DEBUG_ERROR,"Read SN failed."));
-		goto Exit_Read;
-	}
+    if (m_Configs.devsn.bEnable)
+    {
+        strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("SN"));
+        AddPrompt(strPrompt,LIST_INFO);
+        if (ReadItem(ITEM_SN))
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("SN"));
+            AddPrompt(strPrompt,LIST_INFO);
+            LDEGMSG((CLogger::DEBUG_INFO,"Read SN successfully."));
+        }
+        else
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("SN"));
+            AddPrompt(strPrompt,LIST_ERR);
+            LDEGMSG((CLogger::DEBUG_ERROR,"Read SN failed."));
+            goto Exit_Read;
+        }
+    }
 
-	strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("WIFIMAC"));
-	AddPrompt(strPrompt,LIST_INFO);
-	if (ReadItem(ITEM_WIFIMAC))
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("WIFIMAC"));
-		AddPrompt(strPrompt,LIST_INFO);
-		LDEGMSG((CLogger::DEBUG_INFO,"Read WifiMac successfully."));
-	}
-	else
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("WIFIMAC"));
-		AddPrompt(strPrompt,LIST_ERR);
-		LDEGMSG((CLogger::DEBUG_ERROR,"Read WifiMac failed."));
-		goto Exit_Read;
-	}
+    if (m_Configs.WifiMac.bEnable)
+    {
+        strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("WIFIMAC"));
+        AddPrompt(strPrompt,LIST_INFO);
+        if (ReadItem(ITEM_WIFIMAC))
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("WIFIMAC"));
+            AddPrompt(strPrompt,LIST_INFO);
+            LDEGMSG((CLogger::DEBUG_INFO,"Read WifiMac successfully."));
+        }
+        else
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("WIFIMAC"));
+            AddPrompt(strPrompt,LIST_ERR);
+            LDEGMSG((CLogger::DEBUG_ERROR,"Read WifiMac failed."));
+            goto Exit_Read;
+        }
+    }
 
-	strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("BTMAC"));
-	AddPrompt(strPrompt,LIST_INFO);
-	if (ReadItem(ITEM_BTMAC))
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("BTMAC"));
-		AddPrompt(strPrompt,LIST_INFO);
-		LDEGMSG((CLogger::DEBUG_INFO,"Read BtMac successfully."));
-	}
-	else
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("BTMAC"));
-		AddPrompt(strPrompt,LIST_ERR);
-		LDEGMSG((CLogger::DEBUG_ERROR,"Read BtMac failed."));
-		goto Exit_Read;
-	}
+    if (m_Configs.BtMac.bEnable)
+    {
+        strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("BTMAC"));
+        AddPrompt(strPrompt,LIST_INFO);
+        if (ReadItem(ITEM_BTMAC))
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("BTMAC"));
+            AddPrompt(strPrompt,LIST_INFO);
+            LDEGMSG((CLogger::DEBUG_INFO,"Read BtMac successfully."));
+        }
+        else
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("BTMAC"));
+            AddPrompt(strPrompt,LIST_ERR);
+            LDEGMSG((CLogger::DEBUG_ERROR,"Read BtMac failed."));
+            goto Exit_Read;
+        }
+    }
 
-	strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("LANMAC"));
-	AddPrompt(strPrompt,LIST_INFO);
-	if (ReadItem(ITEM_LANMAC))
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("LANMAC"));
-		AddPrompt(strPrompt,LIST_INFO);
-		LDEGMSG((CLogger::DEBUG_INFO,"Read LanMac successfully."));
-	}
-	else
-	{
-		strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("LANMAC"));
-		AddPrompt(strPrompt,LIST_ERR);
-		LDEGMSG((CLogger::DEBUG_ERROR,"Read LanMac failed."));
-		goto Exit_Read;
-	}
+    if (m_Configs.LanMac.bEnable)
+    {
+        strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("LANMAC"));
+        AddPrompt(strPrompt,LIST_INFO);
+        if (ReadItem(ITEM_LANMAC))
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("LANMAC"));
+            AddPrompt(strPrompt,LIST_INFO);
+            LDEGMSG((CLogger::DEBUG_INFO,"Read LanMac successfully."));
+        }
+        else
+        {
+            strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("LANMAC"));
+            AddPrompt(strPrompt,LIST_ERR);
+            LDEGMSG((CLogger::DEBUG_ERROR,"Read LanMac failed."));
+            goto Exit_Read;
+        }
+    }
 	bSuccess = TRUE;
 Exit_Read:
 	m_bRun = FALSE;
@@ -1084,6 +1096,12 @@ BOOL CWNpctoolDlg::OnStartRead()
 	else 
 		m_bExistLoader = FALSE;
 	m_csScanLock.Unlock();
+
+    if (!(m_Configs.devsn.bEnable||m_Configs.WifiMac.bEnable||m_Configs.BtMac.bEnable||m_Configs.LanMac.bEnable))
+    {
+        strPromt = GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str();
+        goto OnStartReadExit;
+    }
 
 	m_bRun = TRUE;
 	AfxBeginThread(ThreadReading,(LPVOID)this);

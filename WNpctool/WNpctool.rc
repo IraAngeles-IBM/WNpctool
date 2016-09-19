@@ -331,6 +331,7 @@ BEGIN
     BEGIN
         MENUITEM "Mode",                        ID_SETTING_MODE
         MENUITEM "Read",                        ID_SETTING_READ
+        MENUITEM "Auto",                        ID_SETTING_AUTO
     END
     POPUP "Help"
     BEGIN

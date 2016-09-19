@@ -170,6 +170,7 @@ public:
 	CFGPATH                 confPath;
 	LONG                    curFilePos[FLAG_CNT];
 	bool					bReadInfo;
+	bool					bAutoTest;
 
 	std::wstring			strLanPath;
 	int						nCurLan;
@@ -183,7 +184,6 @@ public:
 	int						nLogLevel;
 	std::wstring			strLogPath;
 
-    bool         bAutoTest;
 };
 class CIniLocalLan:public CSettingBase
 {

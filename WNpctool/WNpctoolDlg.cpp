@@ -96,6 +96,8 @@ BEGIN_MESSAGE_MAP(CWNpctoolDlg, CDialog)
 	ON_UPDATE_COMMAND_UI(ID_LANGUAGE_CHINESE, &CWNpctoolDlg::OnUpdateLanguageChinese)
 	ON_COMMAND(ID_LANGUAGE_ENGLISH, &CWNpctoolDlg::OnLanguageEnglish)
 	ON_UPDATE_COMMAND_UI(ID_LANGUAGE_ENGLISH, &CWNpctoolDlg::OnUpdateLanguageEnglish)
+	ON_COMMAND(ID_SETTING_AUTO, &CWNpctoolDlg::OnSettingAuto)
+	ON_UPDATE_COMMAND_UI(ID_SETTING_AUTO, &CWNpctoolDlg::OnUpdateSettingAuto)
 END_MESSAGE_MAP()
 
 
@@ -202,6 +204,14 @@ BOOL CWNpctoolDlg::OnInitDialog()
 
 	CString strTitle;
 	GetWindowText(strTitle);
+	if (m_Configs.bReadInfo)
+	{
+		GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
+	}
+	else
+	{
+		GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
+	}
 	
 	if(m_Configs.nLogLevel != DLEVEL_NONE ) {
 		CLogger::DEBUG_LEVEL level = m_Configs.nLogLevel == DLEVEL_DEBUG?CLogger::DEBUG_ALL:
@@ -305,11 +315,11 @@ VOID CWNpctoolDlg::InitUi()
 	GetDlgItem(IDC_EDIT_WIFIMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_BTMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(FALSE);
-	GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
+	//GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
 
 	if (!m_Configs.bReadInfo)
 	{
-		GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
+		//GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
 		if (m_Configs.devsn.bEnable&&m_Configs.devsn.nAutoMode == MODE_MANUAL)
 		{
 			GetDlgItem(IDC_EDIT_SN)->EnableWindow(TRUE);
@@ -464,6 +474,19 @@ void CWNpctoolDlg::ScanDeviceProc()
 		m_lblDevice.RedrawWindow();
 		if (bSendMsg)
 		{
+			if (m_nDeviceCount > 0)
+			{
+				if (m_Configs.bAutoTest&&m_bRun) 
+				{
+					if (m_Configs.bReadInfo)
+					{
+					}
+					else
+					{
+						OnStartWrite(TRUE);
+					}
+				}
+			}
 			PostMessage(WM_UPDATE_MSG,UPDATE_LIST,LIST_EMPTY);
 			PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_EMPTY);
 			PostMessage(WM_UPDATE_MSG,UPDATE_WINDOW,0);
@@ -626,7 +649,6 @@ BOOL CWNpctoolDlg::WriteProc()
 	
 	bSuccess = TRUE;
 WriteProc_Exit:
-	m_bRun = FALSE;
 	if(!m_bUserStop){
 		SaveWriteResultOnPass(bSuccess,((bskip_force_devsn)  ?0:FIELD_DEVSN  )|
 			((bskip_force_wifimac)?0:FIELD_WIFIMAC)|
@@ -647,10 +669,10 @@ WriteProc_Exit:
 	}
 	strPrompt.Format(GetLocalString(_T("IDS_INFO_TIME_ELAPSE")).c_str(),(GetTickCount() - dwTotalTick )/1000,(GetTickCount() - dwTotalTick )%1000);
 	AddPrompt(strPrompt,LIST_TIME);
-	SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
+	//SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
 	m_pWriteThread = NULL;
 	/*exit will set button status,so we must set m_pWorkThread = NULL before **/
-	if (!m_Configs.bAutoTest||m_bUserStop) {
+	if (!(m_Configs.bAutoTest)||(m_bUserStop)) {
 		if (m_bUserStop) {
 			m_bUserStop = FALSE;
 		}
@@ -1055,22 +1077,42 @@ void CWNpctoolDlg::OnBnClickedBtnWrite()
 		}
 
 	} else {
-		if (m_bRun)
+		if (m_Configs.bAutoTest)
 		{
-			if(m_pWriteThread) { 
-				m_bUserStop     = TRUE;
-				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOPING_BUTTON")).c_str());
+			if( m_bRun ) {
+				if( m_pWriteThread) { 
+					m_bUserStop     = TRUE; /*just set m_bUserStop,and wait for thread exit **/
+					SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOPING_BUTTON")).c_str());
+				} else {
+					m_bRun    = FALSE;
+					SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());                
+				}
 			} else {
-				m_bRun = FALSE;
-				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
-				//if(OnStartWrite()) {
-				//	SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOP")).c_str());
-				//}
+				/*m_bUserStop     = FALSE; **/
+				m_bRun    = TRUE;
+				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOP_BUTTON")).c_str());
+				OnStartWrite(TRUE);
 			}
-		}else {
-			m_bRun    = TRUE;
-			SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOP_BUTTON")).c_str());
-			OnStartWrite();
+		}
+		else
+		{
+			if (m_bRun)
+			{
+				if(m_pWriteThread) { 
+					m_bUserStop     = TRUE;
+					SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOPING_BUTTON")).c_str());
+				} else {
+					m_bRun = FALSE;
+					SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
+					//if(OnStartWrite()) {
+					//	SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("STOP")).c_str());
+					//}
+				}
+			}else {
+				m_bRun    = TRUE;
+				SetDlgItemText(ID_BTN_WRITE,GetLocalString(_T("IDS_TEXT_STOP_BUTTON")).c_str());
+				OnStartWrite(FALSE);
+			}
 		}
 
 	}
@@ -1117,28 +1159,11 @@ std::wstring CWNpctoolDlg::GetLocalString(std::wstring strKey)
 {
 	return m_LocalLan.GetLanStr(strKey);
 }
-BOOL CWNpctoolDlg::OnStartWrite()
+BOOL CWNpctoolDlg::OnStartWrite(bool bAuto)
 {
 	CString     strPromt;
 	CString		strText;
 
-	m_csScanLock.Lock();
-	if (m_nDeviceCount!=1)
-	{
-		m_csScanLock.Unlock();
-		//AddPrompt(GetLocalString(_T("LANG:IDS_INFO_START_WRITE")).c_str(),LIST_INFO);
-		strPromt = GetLocalString(_T("IDS_ERROR_NO_USB_WRITE")).c_str();
-		//MessageBox(_T("Not found rockusb to burn."),_T("Error"),MB_OK|MB_ICONERROR);
-		goto OnStartWriteExit;
-	}
-	m_lblDevice.GetWindowText(strText);
-	if (strText.Find(_T("loader"))!=-1)
-	{
-		m_bExistLoader = TRUE;
-	}
-	else 
-		m_bExistLoader = FALSE;
-	m_csScanLock.Unlock();
 	if (!(m_Configs.devsn.bEnable||m_Configs.WifiMac.bEnable||m_Configs.BtMac.bEnable||m_Configs.LanMac.bEnable))
 	{
 		strPromt = GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str();
@@ -1253,6 +1278,24 @@ BOOL CWNpctoolDlg::OnStartWrite()
 		}
 		SetDlgItemText(IDC_EDIT_LANMAC,m_strCurLanMac);
 	}
+	m_csScanLock.Lock();
+	if (m_nDeviceCount < 1)
+	{
+		if(!m_Configs.bAutoTest)
+		{
+			strPromt = GetLocalString(_T("IDS_ERROR_NO_USB_WRITE")).c_str();
+		}
+		m_csScanLock.Unlock();
+		goto OnStartWriteExit;
+	}
+	m_lblDevice.GetWindowText(strText);
+	if (strText.Find(_T("loader"))!=-1)
+	{
+		m_bExistLoader = TRUE;
+	}
+	else 
+		m_bExistLoader = FALSE;
+	m_csScanLock.Unlock();
 	AfxBeginThread(ThreadWrite,(LPVOID)this);
 
 	return TRUE;
@@ -1261,7 +1304,10 @@ OnStartWriteExit:
 		MessageBox(strPromt,GetLocalString(_T("IDS_ERROR_CAPTION")).c_str(),MB_OK|MB_ICONERROR);
 		//AddPrompt(strPromt,LIST_ERR);
 	}
-	PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_FAIL);
+	if (!m_Configs.bAutoTest)
+	{
+		PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_FAIL);
+	}
 	return FALSE;
 }
 void CWNpctoolDlg::OnSettingMode()
@@ -1381,10 +1427,12 @@ void CWNpctoolDlg::OnSettingRead()
 	if (m_Configs.bReadInfo)
 	{
 		pMenu->CheckMenuItem(ID_SETTING_READ, MF_CHECKED |MF_BYCOMMAND);
+		GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
 	}
 	else
 	{
 		pMenu->CheckMenuItem(ID_SETTING_READ, MF_UNCHECKED |MF_BYCOMMAND);
+		GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_WRITE_BUTTON")).c_str());
 	}
 	m_Configs.SaveToolSetting(std::wstring(TEXT("")));
 	InitUi();
@@ -1442,6 +1490,11 @@ VOID CWNpctoolDlg::UpdateMenuItem()
 	} else {
 		pMenuLoop->CheckMenuItem( ID_SETTING_READ      , MF_UNCHECKED|MF_BYCOMMAND);
 	}
+	if(m_Configs.bAutoTest) {
+		pMenuLoop->CheckMenuItem( ID_SETTING_AUTO      , MF_CHECKED  |MF_BYCOMMAND);
+	} else {
+		pMenuLoop->CheckMenuItem( ID_SETTING_AUTO      , MF_UNCHECKED|MF_BYCOMMAND);
+	}
 	pMenuLoop 	= pMenu->GetSubMenu(1);
 	if (m_Configs.nCurLan == 1)
 	{
@@ -1454,4 +1507,26 @@ VOID CWNpctoolDlg::UpdateMenuItem()
 		pMenuLoop->CheckMenuItem( ID_LANGUAGE_CHINESE      , MF_UNCHECKED  |MF_BYCOMMAND);
 	}
 
+}
+void CWNpctoolDlg::OnSettingAuto()
+{
+	// TODO: Add your command handler code here
+	CMenu	*pMenu	= GetMenu();
+	if (!pMenu)	return;
+	m_Configs.bAutoTest = !m_Configs.bAutoTest;
+	if (m_Configs.bAutoTest)
+	{
+		pMenu->CheckMenuItem(ID_SETTING_AUTO, MF_CHECKED |MF_BYCOMMAND);
+	}
+	else
+	{
+		pMenu->CheckMenuItem(ID_SETTING_AUTO, MF_UNCHECKED |MF_BYCOMMAND);
+	}
+	m_Configs.SaveToolSetting(std::wstring(TEXT("")));
+}
+
+void CWNpctoolDlg::OnUpdateSettingAuto(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(TRUE);
 }

@@ -126,7 +126,7 @@ private:
 	BOOL	LoadConfig();
 	VOID	InitUi();
 	BOOL	OnStartRead();
-	BOOL	OnStartWrite();
+	BOOL	OnStartWrite(bool bAuto);
 	std::wstring GetLocalString(std::wstring strKey);
 	VOID    UpdateMenuItem();
 
@@ -152,4 +152,6 @@ public:
 	afx_msg void OnUpdateLanguageChinese(CCmdUI *pCmdUI);
 	afx_msg void OnLanguageEnglish();
 	afx_msg void OnUpdateLanguageEnglish(CCmdUI *pCmdUI);
+	afx_msg void OnSettingAuto();
+	afx_msg void OnUpdateSettingAuto(CCmdUI *pCmdUI);
 };

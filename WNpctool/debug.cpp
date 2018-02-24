@@ -3,7 +3,7 @@
 #include <errno.h>
 #include "debug.h"
 /*#include "../settings/config.h" **/
-#define APP_VERSION "1.1.1"
+#define APP_VERSION "1.1.4"
 #define dim(x) (sizeof(x) / sizeof(x[0]))
 			                         //"19:02:10   App start..."
 #define logmsga "DEBUG "APP_VERSION" "__DATE__" log Message\r\nTime       Message\r\n----------------------------------------------------------------------------------------------\r\n"

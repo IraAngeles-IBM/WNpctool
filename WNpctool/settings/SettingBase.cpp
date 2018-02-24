@@ -286,6 +286,7 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
 	bDebug              = 1 == _wtoi(GetStr(TEXT("Debug")).c_str());
 	bReadInfo			= 1 == _wtoi(GetStr(TEXT("READ")).c_str());
 	bAutoTest			= 1 == _wtoi(GetStr(TEXT("AUTO")).c_str());
+	bReboot				= 1 == _wtoi(GetStr(TEXT("Reboot")).c_str());
 	nLogLevel           = _wtoi(GetStr(TEXT("LogLevel")).c_str());
 	/********************** DevSn **********************/
 	devsn.bEnable		= _wtoi(GetStr(TEXT("DSWR")).c_str());
@@ -386,6 +387,7 @@ bool CIniSettingBase::SaveToolSetting(std::wstring strConfig)
         SetStr( TEXT("Debug")			, bDebug   ?checke:unckeck);
         SetStr( TEXT("READ")    		, bReadInfo ?checke:unckeck);
 		SetStr( TEXT("AUTO")    		, bAutoTest ?checke:unckeck);
+		SetStr( TEXT("Reboot")    		, bReboot ?checke:unckeck);
 
         SetStr( TEXT("DSWR")    		, devsn.bEnable ?checke:unckeck);
         SetStr( TEXT("DSPF")        	, devsn.strPrefix);

@@ -1,7 +1,7 @@
 #ifndef _SETTINGBASE_H_
 #define _SETTINGBASE_H_
 #define USER_LOGIN
-#define APP_VERSION " V1.1.2"
+#define APP_VERSION " V1.1.4"
 #include "inifile.h"
 #include "../config.h"
 
@@ -171,6 +171,7 @@ public:
 	LONG                    curFilePos[FLAG_CNT];
 	bool					bReadInfo;
 	bool					bAutoTest;
+	bool					bReboot;
 
 	std::wstring			strLanPath;
 	int						nCurLan;

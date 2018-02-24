@@ -151,6 +151,9 @@ BEGIN_MESSAGE_MAP(CWNpctoolDlg, CDialog)
 	ON_UPDATE_COMMAND_UI(ID_LANGUAGE_ENGLISH, &CWNpctoolDlg::OnUpdateLanguageEnglish)
 	ON_COMMAND(ID_SETTING_AUTO, &CWNpctoolDlg::OnSettingAuto)
 	ON_UPDATE_COMMAND_UI(ID_SETTING_AUTO, &CWNpctoolDlg::OnUpdateSettingAuto)
+	ON_BN_CLICKED(IDC_BUTTON_LOADER, &CWNpctoolDlg::OnBnClickedButtonLoader)
+	ON_COMMAND(ID_SETTING_RESET, &CWNpctoolDlg::OnSettingReset)
+	ON_UPDATE_COMMAND_UI(ID_SETTING_RESET, &CWNpctoolDlg::OnUpdateSettingReset)
 END_MESSAGE_MAP()
 
 
@@ -206,6 +209,7 @@ BOOL CWNpctoolDlg::OnInitDialog()
 	m_pScanEvent = NULL;
 	m_pScanThread = NULL;
 	m_bRun = FALSE;
+	m_bDownBoot = FALSE;
 	if (LoadConfig())
 	{
 		INIT_DEV_INFO InitDevInfo;
@@ -368,6 +372,7 @@ VOID CWNpctoolDlg::InitUi()
 	GetDlgItem(IDC_EDIT_WIFIMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_BTMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(FALSE);
+	//GetDlgItem(IDC_EDIT_LOADER)->EnableWindow(FALSE);
 	//GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
 
 	if (!m_Configs.bReadInfo)
@@ -397,7 +402,7 @@ VOID CWNpctoolDlg::InitUi()
 	m_lblPrompt.SetFontStatic(_T("宋体"),50,RGB(0,0,0),FS_BOLD|FS_CENTER|FS_VCENTER);
 	PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_EMPTY);
 	//list
-	font.CreateFont(-13,10,0,0,FW_NORMAL,FALSE,FALSE,0,  
+	font.CreateFont(-15,10,0,0,FW_NORMAL,FALSE,FALSE,0,  
 		ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,  
 		DEFAULT_QUALITY,DEFAULT_PITCH|FF_DONTCARE,_T("宋体"));
 	m_listInfo.SetFont(&font);
@@ -493,6 +498,7 @@ void CWNpctoolDlg::ScanDeviceProc()
 		if (m_nDeviceCount==0)
 		{
 			m_bRedLedLight = TRUE;
+			m_bDownBoot = FALSE;
 			m_lblDevice.SetWindowText(GetLocalString(_T("IDS_INFO_DEVICE_ON")).c_str());
 		}
 		else if (m_nDeviceCount==1)
@@ -540,7 +546,7 @@ void CWNpctoolDlg::ScanDeviceProc()
 					}
 				}
 			}
-			PostMessage(WM_UPDATE_MSG,UPDATE_LIST,LIST_EMPTY);
+			//PostMessage(WM_UPDATE_MSG,UPDATE_LIST,LIST_EMPTY);
 			PostMessage(WM_UPDATE_MSG,UPDATE_PROMPT,PROMPT_EMPTY);
 			PostMessage(WM_UPDATE_MSG,UPDATE_WINDOW,0);
 		}
@@ -658,6 +664,7 @@ BOOL CWNpctoolDlg::HexStrToBytes(CString strHex,PBYTE pBuf,int &nBufLen)
 BOOL CWNpctoolDlg::WriteProc()
 {
 	BOOL			bSuccess=FALSE;
+	BOOL			bRet;
 	bool            bskip_force_wifimac = FALSE;
 	bool            bskip_force_btmac   = FALSE;
 	bool            bskip_force_devsn   = FALSE;
@@ -671,6 +678,32 @@ BOOL CWNpctoolDlg::WriteProc()
 	}
 
 	AddPrompt(GetLocalString(_T("IDS_INFO_START_WRITE")).c_str(),LIST_INFO);
+	//download boot
+	if ((!m_bExistLoader)&&(!m_bDownBoot))
+	{
+		AddPrompt(GetLocalString(_T("IDS_SET_LOADER")).c_str(),LIST_INFO);
+		bRet = RK_SetFirmware((LPTSTR)(LPCTSTR)m_strLoader);
+		if (!bRet)
+		{
+			strPrompt.Format(GetLocalString(_T("IDS_SET_LOADER_FAIL")).c_str(),TEXT("SN"));
+			AddPrompt(strPrompt,LIST_ERR);
+			LDEGMSG((CLogger::DEBUG_ERROR,"Error:RK_SetFirmware failed."));
+			goto WriteProc_Exit;
+		}
+		AddPrompt(GetLocalString(_T("IDS_SET_LOADER_SUCCESS")).c_str(),LIST_INFO);
+
+		AddPrompt(GetLocalString(_T("IDS_DOWN_BOOT")).c_str(),LIST_INFO);
+		bRet = RK_DownloadBoot();
+		if (!bRet)
+		{
+			strPrompt.Format(GetLocalString(_T("IDS_DOWN_BOOT_FAIL")).c_str(),TEXT("SN"));
+			AddPrompt(strPrompt,LIST_ERR);
+			LDEGMSG((CLogger::DEBUG_ERROR,"Error:RK_DownloadBoot failed."));
+			goto WriteProc_Exit;
+		}
+		m_bDownBoot = TRUE;
+		AddPrompt(GetLocalString(_T("IDS_DOWN_BOOT_SUCCESS")).c_str(),LIST_INFO);
+	}
 	//1.烧写devsn,先写后读，读出来的值与写进去的值一致则成功，否则失败
 	if (m_bUserStop) {
 		goto WriteProc_Exit;
@@ -742,7 +775,17 @@ BOOL CWNpctoolDlg::WriteProc()
 		}
 		AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_PASS")).c_str(),LIST_INFO);
 	}
-	
+	if (m_Configs.bReboot)
+	{
+		AddPrompt(GetLocalString(_T("IDS_INFO_DEVICE_REBOOT")).c_str(),LIST_INFO);
+		if (!RK_ResetRockusb())
+		{
+			AddPrompt(GetLocalString(_T("IDS_INFO_DEVICE_REBOOT_FAIL")).c_str(),LIST_ERR);
+			goto WriteProc_Exit;
+		}
+		Sleep(1000);//sleep for device offline
+		AddPrompt(GetLocalString(_T("IDS_INFO_DEVICE_REBOOT_PASS")).c_str(),LIST_INFO);
+	}
 	bSuccess = TRUE;
 WriteProc_Exit:
 	if(!m_bUserStop){
@@ -779,7 +822,7 @@ WriteProc_Exit:
 BOOL CWNpctoolDlg::ReadMac(int nItemID)
 {
 	BOOL	bRet;
-	int nSize;
+	//int nSize;
 	USHORT nBufSize;
 	BYTE buf[512];
 	CString strMac;
@@ -1004,6 +1047,7 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 BOOL CWNpctoolDlg::ReadProc()
 {
 	BOOL bSuccess=FALSE;
+	BOOL bRet;
 	CString strPrompt;
 	DWORD   dwTotalTick;
 	dwTotalTick     = GetTickCount();
@@ -1012,6 +1056,33 @@ BOOL CWNpctoolDlg::ReadProc()
 	}
 
 	AddPrompt(GetLocalString(_T("IDS_READ_START")).c_str(),LIST_INFO);
+
+	//download boot
+	if ((!m_bExistLoader)&&(!m_bDownBoot))
+	{
+		AddPrompt(GetLocalString(_T("IDS_SET_LOADER")).c_str(),LIST_INFO);
+		bRet = RK_SetFirmware((LPTSTR)(LPCTSTR)m_strLoader);
+		if (!bRet)
+		{
+			strPrompt.Format(GetLocalString(_T("IDS_SET_LOADER_FAIL")).c_str(),TEXT("SN"));
+			AddPrompt(strPrompt,LIST_ERR);
+			LDEGMSG((CLogger::DEBUG_ERROR,"Error:RK_SetFirmware failed."));
+			goto Exit_Read;
+		}
+		AddPrompt(GetLocalString(_T("IDS_SET_LOADER_SUCCESS")).c_str(),LIST_INFO);
+
+		AddPrompt(GetLocalString(_T("IDS_DOWN_BOOT")).c_str(),LIST_INFO);
+		bRet = RK_DownloadBoot();
+		if (!bRet)
+		{
+			strPrompt.Format(GetLocalString(_T("IDS_DOWN_BOOT_FAIL")).c_str(),TEXT("SN"));
+			AddPrompt(strPrompt,LIST_ERR);
+			LDEGMSG((CLogger::DEBUG_ERROR,"Error:RK_DownloadBoot failed."));
+			goto Exit_Read;
+		}
+		m_bDownBoot = TRUE;
+		AddPrompt(GetLocalString(_T("IDS_DOWN_BOOT_SUCCESS")).c_str(),LIST_INFO);
+	}
 
     if (m_Configs.devsn.bEnable)
     {
@@ -1088,6 +1159,8 @@ BOOL CWNpctoolDlg::ReadProc()
             goto Exit_Read;
         }
     }
+	RK_ResetRockusb();
+	Sleep(1000);//sleep for device offline
 	bSuccess = TRUE;
 Exit_Read:
 	m_bRun = FALSE;
@@ -1338,7 +1411,7 @@ BOOL CWNpctoolDlg::OnStartRead()
 		goto OnStartReadExit;
 	}
 	m_lblDevice.GetWindowText(strText);
-	if (strText.Find(_T("loader"))!=-1)
+	if (strText.Find(_T("LOADER"))!=-1)
 	{
 		m_bExistLoader = TRUE;
 	}
@@ -1351,7 +1424,15 @@ BOOL CWNpctoolDlg::OnStartRead()
         strPromt = GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str();
         goto OnStartReadExit;
     }
-
+	if (!m_bExistLoader)
+	{
+		GetDlgItemText(IDC_EDIT_LOADER,m_strLoader);
+		if (m_strLoader.IsEmpty()&&strText.Find(_T("MASKROM"))!=-1)
+		{
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_INVALID_LOADER")).c_str(),m_strCurLanMac);
+			goto OnStartReadExit;
+		}
+	}
 	m_bRun = TRUE;
 	AfxBeginThread(ThreadReading,(LPVOID)this);
 
@@ -1496,13 +1577,23 @@ BOOL CWNpctoolDlg::OnStartWrite(bool bAuto)
 		goto OnStartWriteExit;
 	}
 	m_lblDevice.GetWindowText(strText);
-	if (strText.Find(_T("loader"))!=-1)
+	if (strText.Find(_T("LOADER"))!=-1)
 	{
 		m_bExistLoader = TRUE;
 	}
 	else 
 		m_bExistLoader = FALSE;
 	m_csScanLock.Unlock();
+	if (!m_bExistLoader)
+	{
+		GetDlgItemText(IDC_EDIT_LOADER,m_strLoader);
+		if (m_strLoader.IsEmpty()&&strText.Find(_T("MASKROM"))!=-1)
+		{
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_INVALID_LOADER")).c_str(),m_strCurLanMac);
+			goto OnStartWriteExit;
+		}
+	}
+
 	AfxBeginThread(ThreadWrite,(LPVOID)this);
 
 	return TRUE;
@@ -1702,6 +1793,11 @@ VOID CWNpctoolDlg::UpdateMenuItem()
 	} else {
 		pMenuLoop->CheckMenuItem( ID_SETTING_AUTO      , MF_UNCHECKED|MF_BYCOMMAND);
 	}
+	if(m_Configs.bReboot) {
+		pMenuLoop->CheckMenuItem( ID_SETTING_RESET      , MF_CHECKED  |MF_BYCOMMAND);
+	} else {
+		pMenuLoop->CheckMenuItem( ID_SETTING_RESET      , MF_UNCHECKED|MF_BYCOMMAND);
+	}
 	pMenuLoop 	= pMenu->GetSubMenu(1);
 	if (m_Configs.nCurLan == 1)
 	{
@@ -1733,6 +1829,43 @@ void CWNpctoolDlg::OnSettingAuto()
 }
 
 void CWNpctoolDlg::OnUpdateSettingAuto(CCmdUI *pCmdUI)
+{
+	// TODO: Add your command update UI handler code here
+	pCmdUI->Enable(TRUE);
+}
+
+void CWNpctoolDlg::OnBnClickedButtonLoader()
+{
+	// TODO: Add your control notification handler code here
+	CString strFile;
+	BOOL bRet;
+	bRet = cmCommonDlg::OpenDialog(strFile,_T("Firmware(*.img),Loader(*.bin)|*.img;*.bin|All File(*.*)|*.*||"));
+	if (!bRet)
+	{
+		SetDlgItemText(IDC_EDIT_LOADER,_T(""));
+		return ;
+	}
+	SetDlgItemText(IDC_EDIT_LOADER,strFile);
+}
+
+void CWNpctoolDlg::OnSettingReset()
+{
+	// TODO: Add your command handler code here
+	CMenu	*pMenu	= GetMenu();
+	if (!pMenu)	return;
+	m_Configs.bReboot = !m_Configs.bReboot;
+	if (m_Configs.bReboot)
+	{
+		pMenu->CheckMenuItem(ID_SETTING_RESET, MF_CHECKED |MF_BYCOMMAND);
+	}
+	else
+	{
+		pMenu->CheckMenuItem(ID_SETTING_RESET, MF_UNCHECKED |MF_BYCOMMAND);
+	}
+	m_Configs.SaveToolSetting(std::wstring(TEXT("")));
+}
+
+void CWNpctoolDlg::OnUpdateSettingReset(CCmdUI *pCmdUI)
 {
 	// TODO: Add your command update UI handler code here
 	pCmdUI->Enable(TRUE);

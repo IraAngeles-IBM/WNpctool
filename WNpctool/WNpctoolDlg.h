@@ -115,6 +115,7 @@ private:
 	BOOL			m_bExistMsc;
 	BOOL			m_bExistAdb;
 	BOOL			m_bExistLoader;
+	BOOL			m_bDownBoot;
 	BOOL			m_bRun;
 
 	BOOL            m_bRedLedLight;
@@ -158,4 +159,7 @@ public:
 	afx_msg void OnUpdateLanguageEnglish(CCmdUI *pCmdUI);
 	afx_msg void OnSettingAuto();
 	afx_msg void OnUpdateSettingAuto(CCmdUI *pCmdUI);
+	afx_msg void OnBnClickedButtonLoader();
+	afx_msg void OnSettingReset();
+	afx_msg void OnUpdateSettingReset(CCmdUI *pCmdUI);
 };

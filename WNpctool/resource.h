@@ -112,6 +112,9 @@
 #define IDC_RADIO_FILE_SN               1092
 #define IDC_PICTURE_DEVICE              1093
 #define IDC_LIST_REPORT                 1094
+#define IDC_BUTTON_LOADER               1095
+#define IDC_EDIT1                       1096
+#define IDC_EDIT_LOADER                 1096
 #define ID_SETTING                      32771
 #define ID_HELP32772                    32772
 #define ID_HELP_FOLDER                  32773
@@ -129,7 +132,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        135
 #define _APS_NEXT_COMMAND_VALUE         32781
-#define _APS_NEXT_CONTROL_VALUE         1095
+#define _APS_NEXT_CONTROL_VALUE         1097
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

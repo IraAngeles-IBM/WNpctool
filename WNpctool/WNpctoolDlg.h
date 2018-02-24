@@ -83,6 +83,10 @@ public:
 	BOOL			ReadProc();
 	BOOL			WriteItem(int nItemID);
 	BOOL			ReadItem(int nItemID);
+	BOOL			WriteMac(CString strMac,int nItemID);
+	BOOL			ReadMac(int nItemID);
+	CString			BytesToHexStr(PBYTE pBuf,int nBufLen);
+	BOOL			HexStrToBytes(CString strHex,PBYTE pBuf,int &nBufLen);
 	LRESULT			OnHandleUpdateMsg(WPARAM wParam,LPARAM lParam);
 	void			AddPrompt(CString strPrompt,int flag);
 	VOID			WalkMenu(CMenu *pMenu,CString strMainKeyPart);

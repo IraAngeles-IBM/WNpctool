@@ -29,6 +29,59 @@ UINT ThreadReading(LPVOID lpParam)
 	pMainDlg->ReadProc();
 	return 0;
 }
+static int hexchar2value(const char ch)
+{
+	int result = 0;
+	if(ch >= '0' && ch <= '9') {
+		result = (int)(ch - '0');
+	} else if(ch >= 'a' && ch <= 'z') {
+		result = (int)(ch - 'a') + 10;
+	} else if(ch >= 'A' && ch <= 'Z') {
+		result = (int)(ch - 'A') + 10;
+	} else{
+		result = -1;
+	}
+	return result;
+}
+
+static char value2hexchar(const int value)
+{
+	char result = 0;
+	if(value >= 0 && value <= 9) {
+		result = (char)(value + '0');
+	} else if(value >= 10 && value <= 15) {
+		result = (char)(value - 10 + 'A');
+	}
+	return result;
+}
+// Convert wstring to string
+static std::string wstr2str(const std::wstring& arg)
+{
+	int requiredSize;
+	requiredSize = WideCharToMultiByte(CP_ACP,0,arg.c_str(),arg.length(),NULL,0,NULL,NULL);
+	std::string res;
+	if (requiredSize<=0) {
+		res = "";
+		return res;
+	}
+	res.assign(requiredSize,'\0');
+	WideCharToMultiByte(CP_ACP,0,arg.c_str(),arg.length(),const_cast<char*>(res.data()),requiredSize,NULL,NULL);
+	return res;
+}
+// Convert string to wstring
+static std::wstring str2wstr(const std::string& arg)
+{
+	int requiredSize;
+	requiredSize = MultiByteToWideChar(CP_ACP,0,arg.c_str(),arg.length(),NULL,0);
+	std::wstring res;
+	if (requiredSize<=0) {
+		res = L"";
+		return res;
+	}
+	res.assign(requiredSize,L'\0');
+	MultiByteToWideChar(CP_ACP,0,arg.c_str(),arg.length(),const_cast<wchar_t *>(res.data()),requiredSize);
+	return res;
+}
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -558,7 +611,50 @@ void CWNpctoolDlg::OnClose()
 	m_Configs.SaveToolSetting(std::wstring(_T("")));
 	CDialog::OnClose();
 }
-
+CString CWNpctoolDlg::BytesToHexStr(PBYTE pBuf,int nBufLen)
+{
+	CString strRet = _T("");
+	CString strValue;
+	int i;
+	for (i=0;i<nBufLen;i++)
+	{
+		strValue = cmNumString::NumToStr(pBuf[i],16);
+		if (strValue.GetLength()==1)
+		{
+			strValue = _T("0")+strValue;
+		}
+		else if (strValue.GetLength()>2)
+		{
+			strValue = strValue.Left(2);
+		}
+		strRet = strRet + strValue;
+	}
+	strRet.MakeUpper();
+	return strRet;
+}
+BOOL CWNpctoolDlg::HexStrToBytes(CString strHex,PBYTE pBuf,int &nBufLen)
+{
+	CString strValue;
+	int nStrLen,i,nCount;
+	if (nBufLen<=0)
+	{
+		return FALSE;
+	}
+	nCount=i=0;nStrLen=strHex.GetLength();
+	while((i+2)<=nStrLen)
+	{
+		strValue = strHex.Mid(i,2);
+		pBuf[nCount] = cmNumString::StrToULong(strValue,16);
+		nCount++;
+		i+=2;
+		if (nCount>=nBufLen)
+		{
+			break;
+		}
+	}
+	nBufLen = nCount;
+	return TRUE;
+}
 BOOL CWNpctoolDlg::WriteProc()
 {
 	BOOL			bSuccess=FALSE;
@@ -602,7 +698,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_WRITE")).c_str(),LIST_INFO);
 		strPrompt.Format(TEXT("WIFIMAC:%s"),(LPCTSTR)m_strCurWifiMac);
 		AddPrompt(strPrompt,LIST_INFO);
-		if(!WriteItem(ITEM_WIFIMAC))
+		if(!WriteMac(m_strCurWifiMac,ITEM_WIFIMAC))
 		{
 			LDEGMSG((CLogger::DEBUG_ERROR,"Write WifiMac failed."));
 			AddPrompt(GetLocalString(_T("IDS_INFO_WIFIMAC_FAIL")).c_str(),LIST_ERR);
@@ -620,7 +716,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_WRITE")).c_str(),LIST_INFO);
 		strPrompt.Format(TEXT("BTMAC:%s"),(LPCTSTR)m_strCurBtMac);
 		AddPrompt(strPrompt,LIST_INFO);
-		if(!WriteItem(ITEM_BTMAC))
+		if(!WriteMac(m_strCurBtMac,ITEM_BTMAC))
 		{
 			LDEGMSG((CLogger::DEBUG_ERROR,"Write BtMac failed."));
 			AddPrompt(GetLocalString(_T("IDS_INFO_BTMAC_FAIL")).c_str(),LIST_ERR);
@@ -638,7 +734,7 @@ BOOL CWNpctoolDlg::WriteProc()
 		AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_WRITE")).c_str(),LIST_INFO);
 		strPrompt.Format(TEXT("LANMAC:%s"),(LPCTSTR)m_strCurLanMac);
 		AddPrompt(strPrompt,LIST_INFO);
-		if(!WriteItem(ITEM_LANMAC))
+		if(!WriteMac(m_strCurLanMac,ITEM_LANMAC))
 		{
 			LDEGMSG((CLogger::DEBUG_ERROR,"Write LanMac failed."));
 			AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_FAIL")).c_str(),LIST_ERR);
@@ -680,14 +776,115 @@ WriteProc_Exit:
 	}
 	return bSuccess;
 }
+BOOL CWNpctoolDlg::ReadMac(int nItemID)
+{
+	BOOL	bRet;
+	int nSize;
+	USHORT nBufSize;
+	BYTE buf[512];
+	CString strMac;
+
+	LDEGMSG((CLogger::DEBUG_ERROR,"-------------------Read Mac----------------"));
+	bRet = RK_ReadProvisioningData(nItemID,buf,nBufSize);
+	if (!bRet)
+	{
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_ReadProvisioningData failed."));
+		return FALSE;
+	}
+
+	if (nBufSize == 0)
+	{
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_ReadProvisioningData return size 0"));
+		return FALSE;
+	}
+	LDEGMSG((CLogger::DEBUG_ERROR,("item=%d,read mac %02x:%02x:%02x:%02x:%02x:%02x"),nItemID,buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]));
+	//if (!bRet)
+	//{
+	//	LDEGMSG((CLogger::DEBUG_ERROR,"convert value failed."));
+	//	return FALSE;
+	//}
+	strMac = BytesToHexStr(buf,nBufSize);
+	if (ITEM_WIFIMAC == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_WIFIMAC,strMac);
+	}else if (ITEM_BTMAC == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_BTMAC,strMac);
+	}else if (ITEM_LANMAC == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_LANMAC,strMac);
+	}
+	else
+	{
+
+	}
+
+	return TRUE;
+}
+BOOL CWNpctoolDlg::WriteMac(CString strMac,int nItemID)
+{
+	BOOL bRet;
+	BYTE readback[512];
+	USHORT nReadbackSize=30;
+	int nSize=6;
+	BYTE mac[6];
+
+	LDEGMSG((CLogger::DEBUG_ERROR,"-------------------WriteMac----------------"));
+	HexStrToBytes(strMac,mac,nSize);
+	//1.烧写mac,先写后读，读出来的值与写进去的值一致则成功，否则失败
+	//烧写mac
+	//if (ITEM_WIFIMAC == nItemID)
+	//{
+	//	//bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurWifiMac);
+	//	for(int i = 0; i < len ; i++ ) {
+	//		mac[i] = (hexchar2value(wifi_mac[2*i]) << 4)|(hexchar2value(wifi_mac[2*i + 1]));
+	//	}
+	//	LDEGMSG((CLogger::DEBUG_ERROR,("wifi mac %02x:%02x:%02x:%02x:%02x:%02x\r\n"),Wifi[0],Wifi[1],Wifi[2],Wifi[3],Wifi[4],Wifi[5]));
+	//	LDEGMSG((CLogger::DEBUG_ERROR,("wifi mac:%s\r\n"),mac));
+	//}else if (ITEM_BTMAC == nItemID)
+	//{
+	//	//bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurBtMac);
+	//}else if (ITEM_LANMAC == nItemID)
+	//{
+	//	//bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurLanMac);
+	//}
+	//else
+	//{
+
+	//}
+	LDEGMSG((CLogger::DEBUG_ERROR,("item=%d,write mac %02x:%02x:%02x:%02x:%02x:%02x"),nItemID,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]));
+	bRet = RK_WriteProvisioningData(nItemID,mac,nSize);		
+	if (!bRet)
+	{
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData failed."));
+		return FALSE;
+	}
+	//读取mac
+	memset(readback,0,512);
+	bRet = RK_ReadProvisioningData(nItemID,readback,nReadbackSize);
+	if (!bRet)
+	{
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData readback failed."));
+		return FALSE;
+	}
+	LDEGMSG((CLogger::DEBUG_ERROR,("item=%d,read mac %02x:%02x:%02x:%02x:%02x:%02x"),nItemID,readback[0],readback[1],readback[2],readback[3],readback[4],readback[5]));
+	if (memcmp(readback,mac,nSize)!=0)
+	{
+		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData compare failed."));
+		return FALSE;
+	}
+	return TRUE;
+}
 BOOL CWNpctoolDlg::WriteItem(int nItemID)
 {
 	BOOL bRet;
 	LPSTR lpszData=NULL;
 	BYTE readback[512];
-	USHORT nReadbackSize = 30;
+	USHORT nReadbackSize;
 	int nSize;
+	unsigned char   mac[6];
 
+	memset(mac,0,6);
 	//1.烧写devsn,先写后读，读出来的值与写进去的值一致则成功，否则失败
 	//烧写devsn
 	if (ITEM_SN == nItemID)
@@ -696,6 +893,11 @@ BOOL CWNpctoolDlg::WriteItem(int nItemID)
 	}else if (ITEM_WIFIMAC == nItemID)
 	{
 		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurWifiMac);
+		//for(int i = 0; i < 6 ; i++ ) {
+		//	mac[i] = (hexchar2value(m_strCurWifiMac[2*i]) << 4)|(hexchar2value(m_strCurWifiMac[2*i + 1]));
+		//}
+		//LDEGMSG((CLogger::DEBUG_ERROR,("wifi mac %02x:%02x:%02x:%02x:%02x:%02x\r\n"),mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]));
+		//lpszData = (char*)mac;
 	}else if (ITEM_BTMAC == nItemID)
 	{
 		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurBtMac);
@@ -726,8 +928,12 @@ BOOL CWNpctoolDlg::WriteItem(int nItemID)
 		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData readback failed."));
 		return FALSE;
 	}
+
+	LDEGMSG((CLogger::DEBUG_ERROR,"Write:%s,Read:%s",lpszData,readback));
+	
 	if (memcmp(readback,lpszData,nSize)!=0)
 	{
+		LDEGMSG((CLogger::DEBUG_ERROR,"Write:%s,Read:%s",lpszData,readback));
 		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData compare failed."));
 		return FALSE;
 	}
@@ -761,6 +967,7 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 	//	}
 	//	return FALSE;
 	//}
+
 	if (nBufSize != 0)
 	{
 		bRet = cmStrCode::AnsiToUnicode(lpszValue,nSize,(LPCSTR)buf);
@@ -829,7 +1036,7 @@ BOOL CWNpctoolDlg::ReadProc()
     {
         strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("WIFIMAC"));
         AddPrompt(strPrompt,LIST_INFO);
-        if (ReadItem(ITEM_WIFIMAC))
+		if (ReadMac(ITEM_WIFIMAC))
         {
             strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("WIFIMAC"));
             AddPrompt(strPrompt,LIST_INFO);
@@ -848,7 +1055,7 @@ BOOL CWNpctoolDlg::ReadProc()
     {
         strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("BTMAC"));
         AddPrompt(strPrompt,LIST_INFO);
-        if (ReadItem(ITEM_BTMAC))
+        if (ReadMac(ITEM_BTMAC))
         {
             strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("BTMAC"));
             AddPrompt(strPrompt,LIST_INFO);
@@ -867,7 +1074,7 @@ BOOL CWNpctoolDlg::ReadProc()
     {
         strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("LANMAC"));
         AddPrompt(strPrompt,LIST_INFO);
-        if (ReadItem(ITEM_LANMAC))
+        if (ReadMac(ITEM_LANMAC))
         {
             strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("LANMAC"));
             AddPrompt(strPrompt,LIST_INFO);

@@ -4,6 +4,9 @@
 #include "stdafx.h"
 #include "WNpctool.h"
 #include "ConfigMode.h"
+#include "cmfuns.h"
+#include "cmNumString.h"
+using namespace cm;
 
 
 // CConfigMode dialog
@@ -107,6 +110,10 @@ void CConfigMode::OnBnClickedBtnModeApply()
 	if(!m_LanMacDlg.OnSaveConfig()) {
 		return ;
 	}
+	m_SnDlg.OnEnSetfocusEditDevsnSegmentCount();
+	m_WifiMacDlg.OnEnSetfocusEditWifimacSegmentCount();
+	m_BtMacDlg.OnEnSetfocusEditBtmacSegmentCount();
+	m_LanMacDlg.OnEnSetfocusEditLanmacSegmentCount();
 }
 
 void CConfigMode::OnBnClickedBtnModeOk()

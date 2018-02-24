@@ -17,6 +17,7 @@
 #define IDD_DIALOG_BTMAC                134
 #define IDI_ICON1                       134
 #define IDR_WNFRAME                     134
+#define IDD_DIALOG_IMEI                 135
 #define IDC_CB_DEVICES                  1000
 #define ID_BTN_WRITE                    1001
 #define IDC_STATIC_SN                   1002
@@ -29,9 +30,12 @@
 #define IDC_EDIT_BTMAC                  1009
 #define IDC_LIST2                       1010
 #define IDC_LIST_LOG                    1010
+#define IDC_STATIC_BTMAC2               1010
 #define IDC_STATIC_STATUS               1011
 #define IDC_LABEL_DEVICE                1012
 #define IDC_TAB_SNMAC                   1013
+#define IDC_EDIT_BTMAC2                 1013
+#define IDC_EDIT_IMEI                   1013
 #define IDC_BTN_MODE_OK                 1014
 #define IDC_BTN_MODE_CANCEL             1015
 #define IDC_CHECK_SN_SELECT             1016
@@ -115,6 +119,22 @@
 #define IDC_BUTTON_LOADER               1095
 #define IDC_EDIT1                       1096
 #define IDC_EDIT_LOADER                 1096
+#define IDC_CHECK_IMEI_SELECT           1097
+#define IDC_STATIC_IMEI                 1098
+#define IDC_RADIO_MANUAL_IMEI           1099
+#define IDC_RADIO_AUTO_IMEI             1100
+#define IDC_RADIO_FILE_IMEI             1101
+#define IDC_LABEL_IMEI_SEGMENT_START    1102
+#define IDC_EDIT_IMEI_SEGMENT_START     1103
+#define IDC_LABEL_IMEI_SEGMENT_CURRENT  1104
+#define IDC_EDIT_IMEI_SEGMENT_CURRENT   1105
+#define IDC_LABEL_IMEI_SEGMENT_END      1106
+#define IDC_EDIT_IMEI_SEGMENT_END       1107
+#define IDC_LABEL_IMEI_SEGMENT_COUNT    1108
+#define IDC_EDIT_IMEI_SEGMENT_COUNT     1109
+#define IDC_LABEL_IMEI_FILE_PATH        1110
+#define IDC_EDIT_IMEI_FILE_PATH         1111
+#define IDC_BUTTON_IMEI_FILE_PATH       1112
 #define ID_SETTING                      32771
 #define ID_HELP32772                    32772
 #define ID_HELP_FOLDER                  32773
@@ -133,7 +153,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        135
 #define _APS_NEXT_COMMAND_VALUE         32782
-#define _APS_NEXT_CONTROL_VALUE         1097
+#define _APS_NEXT_CONTROL_VALUE         1113
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

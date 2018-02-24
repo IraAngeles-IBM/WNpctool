@@ -33,4 +33,5 @@ public:
 	afx_msg void OnBnClickedRadioAutoWifimac();
 	afx_msg void OnBnClickedCheckWifimacSelect();
 	afx_msg void OnEnSetfocusEditWifimacSegmentCount();
+	afx_msg void OnBnClickedRadioFileWifimac();
 };

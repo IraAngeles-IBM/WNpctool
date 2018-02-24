@@ -33,6 +33,7 @@ BEGIN_MESSAGE_MAP(CWifiMacDlg, CDialog)
 	ON_BN_CLICKED(IDC_RADIO_AUTO_WIFIMAC, &CWifiMacDlg::OnBnClickedRadioAutoWifimac)
 	ON_BN_CLICKED(IDC_CHECK_WIFIMAC_SELECT, &CWifiMacDlg::OnBnClickedCheckWifimacSelect)
 	ON_EN_SETFOCUS(IDC_EDIT_WIFIMAC_SEGMENT_COUNT, &CWifiMacDlg::OnEnSetfocusEditWifimacSegmentCount)
+	ON_BN_CLICKED(IDC_RADIO_FILE_WIFIMAC, &CWifiMacDlg::OnBnClickedRadioFileWifimac)
 END_MESSAGE_MAP()
 
 
@@ -218,4 +219,9 @@ void CWifiMacDlg::OnEnSetfocusEditWifimacSegmentCount()
 
 	nCount = cmNumString::StrToSLong(strEndMac.Right(6),16) - cmNumString::StrToSLong(strCurrentMac.Right(6),16) + 1;
 	SetDlgItemText(IDC_EDIT_WIFIMAC_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
+}
+
+void CWifiMacDlg::OnBnClickedRadioFileWifimac()
+{
+	// TODO: Add your control notification handler code here
 }

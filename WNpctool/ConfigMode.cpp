@@ -15,7 +15,7 @@ IMPLEMENT_DYNAMIC(CConfigMode, CDialog)
 
 CConfigMode::CConfigMode(CIniSettingBase &Config,CIniLocalLan &LocalLang,CWnd* pParent /*=NULL*/)
 	: CDialog(CConfigMode::IDD, pParent),m_Configs(Config),m_LocalLang(LocalLang),m_SnDlg(Config,LocalLang),
-	m_WifiMacDlg(Config,LocalLang),m_BtMacDlg(Config,LocalLang),m_LanMacDlg(Config,LocalLang)
+	m_WifiMacDlg(Config,LocalLang),m_BtMacDlg(Config,LocalLang),m_LanMacDlg(Config,LocalLang),m_ImeiDlg(Config,LocalLang)
 {
 
 }
@@ -51,17 +51,20 @@ BOOL CConfigMode::OnInitDialog()
 	m_TabMode.InsertItem(1,_T("WIFI MAC"));
 	m_TabMode.InsertItem(2,_T("LAN MAC"));
 	m_TabMode.InsertItem(3,_T("BT MAC"));
+	m_TabMode.InsertItem(4,_T("IMEI"));
 	m_LocalLang.TreeControls(m_hWnd,m_Configs.bDebug?TRUE:FALSE,this->IDD,false);
 
 	m_SnDlg.Create(IDD_DIALOG_SN,&m_TabMode);
 	m_WifiMacDlg.Create(IDD_DIALOG_WIFIMAC,&m_TabMode);
 	m_LanMacDlg.Create(IDD_DIALOG_LANMAC,&m_TabMode);
 	m_BtMacDlg.Create(IDD_DIALOG_BTMAC,&m_TabMode);
+	m_ImeiDlg.Create(IDD_DIALOG_IMEI,&m_TabMode);
 	GetClientRect(rc);
 	m_ChildCWnds[0] = &m_SnDlg;
 	m_ChildCWnds[1] = &m_WifiMacDlg;
 	m_ChildCWnds[2] = &m_LanMacDlg;
 	m_ChildCWnds[3] = &m_BtMacDlg;
+	m_ChildCWnds[4] = &m_ImeiDlg;
 	OnSizeCtl( rc.right - rc.left ,rc.bottom - rc.top);
 	m_iCurSelTab    = 0;
 	m_ChildCWnds[m_iCurSelTab]->ShowWindow(SW_SHOW);
@@ -83,6 +86,7 @@ VOID CConfigMode::UpdateInterface()
 	m_WifiMacDlg.UpdateInterface();
 	m_BtMacDlg.UpdateInterface();
 	m_LanMacDlg.UpdateInterface();
+	m_ImeiDlg.UpdateInterface();
 }
 
 void CConfigMode::OnSizeCtl( int cx, int cy)
@@ -110,10 +114,14 @@ void CConfigMode::OnBnClickedBtnModeApply()
 	if(!m_LanMacDlg.OnSaveConfig()) {
 		return ;
 	}
+	if(!m_ImeiDlg.OnSaveConfig()) {
+		return ;
+	}
 	m_SnDlg.OnEnSetfocusEditDevsnSegmentCount();
 	m_WifiMacDlg.OnEnSetfocusEditWifimacSegmentCount();
 	m_BtMacDlg.OnEnSetfocusEditBtmacSegmentCount();
 	m_LanMacDlg.OnEnSetfocusEditLanmacSegmentCount();
+	m_ImeiDlg.OnEnSetfocusEditImeiSegmentCount();
 }
 
 void CConfigMode::OnBnClickedBtnModeOk()
@@ -129,6 +137,9 @@ void CConfigMode::OnBnClickedBtnModeOk()
 		return ;
 	}
 	if(!m_LanMacDlg.OnSaveConfig()) {
+		return ;
+	}
+	if(!m_ImeiDlg.OnSaveConfig()) {
 		return ;
 	}
 	CDialog::OnOK();

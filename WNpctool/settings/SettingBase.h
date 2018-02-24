@@ -1,7 +1,7 @@
 #ifndef _SETTINGBASE_H_
 #define _SETTINGBASE_H_
 #define USER_LOGIN
-#define APP_VERSION " V1.1.4"
+#define APP_VERSION " V1.1.5"
 #include "inifile.h"
 #include "../config.h"
 
@@ -167,6 +167,7 @@ public:
 	STRUCT_MAC_CONFIG       BtMac;
 	STRUCT_MAC_CONFIG       LanMac;
 	STRUCT_SN_CONFIG        devsn;
+	STRUCT_IMEI_CONFIG		Imei;
 	CFGPATH                 confPath;
 	LONG                    curFilePos[FLAG_CNT];
 	bool					bReadInfo;

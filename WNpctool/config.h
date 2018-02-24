@@ -98,18 +98,19 @@ typedef struct{
 typedef struct{
 	BOOL			bEnable;
 	BOOL			bForcingWrite;
-	INT				bAutoMode;
+	INT				nAutoMode;
  
 	std::wstring	strStartImei1;
 	std::wstring	strCurrentImei1;
+	std::wstring	strEndImei1;
     int				nCount1;
 	int				nRemainCount1;
 
-    BOOL			bImei2;
-	std::wstring	strStartImei2;
-	std::wstring	strCurrentImei2;
-    int				nCount2;
-	int				nRemainCount2;
+    //BOOL			bImei2;
+	//std::wstring	strStartImei2;
+	//std::wstring	strCurrentImei2;
+    //int				nCount2;
+	//int				nRemainCount2;
 
 }STRUCT_IMEI_CONFIG,*PSTRUCT__IMEI_CONFIG;
 

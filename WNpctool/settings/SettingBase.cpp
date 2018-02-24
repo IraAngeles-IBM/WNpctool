@@ -366,6 +366,26 @@ bool CIniSettingBase::LoadToolSetting(std::wstring strConfig)
 	confPath.dwLineCnt[FLAG_LANMAC]	= _wtoi(GetStr(TEXT("LMLC")).c_str());
 	confPath.dwLinePos[FLAG_LANMAC]	= _wtoi(GetStr(TEXT("LMLP")).c_str());	
 
+	/********************** IMEI **********************/
+	Imei.bEnable			= _wtoi(GetStr(TEXT("IMWR")).c_str());
+	nValue					= _wtoi(GetStr(TEXT("IMST")).c_str());
+	Imei.nCount1			= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("IMSR")).c_str());
+	Imei.nRemainCount1		= (0 < nValue)?nValue:0;
+	nValue					= _wtoi(GetStr(TEXT("IMAI")).c_str());
+	Imei.nAutoMode			= ((0 <= nValue)&&(3 >= nValue))?nValue:0;
+
+	Imei.strStartImei1		= GetStr(TEXT("IMSS"));
+	Imei.strCurrentImei1	= GetStr(TEXT("IMSC"));
+	Imei.strEndImei1		= GetStr(TEXT("IMSD"));
+	nValue					= _wtoi(GetStr(TEXT("IMTP")).c_str());
+	//Imei.dwType			= (( nValue <= 0)||(nValue >= 5))?4:nValue;
+
+	/*file*/
+	wsprintf(confPath.filePath[FLAG_IMEI1],GetStr(TEXT("IMFN")).c_str());
+	confPath.lFilePos[FLAG_IMEI1]	= _wtoi(GetStr(TEXT("IMFP")).c_str());
+	confPath.dwLineCnt[FLAG_IMEI1]	= _wtoi(GetStr(TEXT("IMLC")).c_str());
+	confPath.dwLinePos[FLAG_IMEI1]	= _wtoi(GetStr(TEXT("IMLP")).c_str());	
     return true;
 
 }
@@ -467,6 +487,28 @@ bool CIniSettingBase::SaveToolSetting(std::wstring strConfig)
 		SetStr( TEXT("LMLC")          , szTemp1);
 		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLinePos[FLAG_LANMAC]);
 		SetStr( TEXT("LMLP")          , szTemp1);
+
+		/********************** IMEI **********************/
+		SetStr( TEXT("IMSS") 			, Imei.strStartImei1);
+		SetStr( TEXT("IMSC") 			, Imei.strCurrentImei1);
+		SetStr( TEXT("IMSD") 			, Imei.strEndImei1);
+		SetStr( TEXT("IMWR")    		, Imei.bEnable ?checke:unckeck);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),Imei.nCount1);
+		SetStr( TEXT("IMST")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),Imei.nRemainCount1);
+		SetStr( TEXT("IMSR")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),Imei.nAutoMode);
+		SetStr( TEXT("IMAI")          , szTemp1);
+		//swprintf(szTemp1,nof(szTemp1),TEXT("%d"),Imei.dwType);
+		//SetStr( TEXT("IMTP")          , szTemp1);
+		/*file*/
+		SetStr( TEXT("IMFN") 			, confPath.filePath[FLAG_IMEI1]);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.lFilePos[FLAG_IMEI1]);
+		SetStr( TEXT("IMFP")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLineCnt[FLAG_IMEI1]);
+		SetStr( TEXT("IMLC")          , szTemp1);
+		swprintf(szTemp1,nof(szTemp1),TEXT("%d"),confPath.dwLinePos[FLAG_IMEI1]);
+		SetStr( TEXT("IMLP")          , szTemp1);
 
 		return pIniFile->Save(szFileName);
     }

@@ -368,10 +368,12 @@ VOID CWNpctoolDlg::InitUi()
 	SetDlgItemText(IDC_EDIT_WIFIMAC,_T(""));
 	SetDlgItemText(IDC_EDIT_BTMAC,_T(""));
 	SetDlgItemText(IDC_EDIT_LANMAC,_T(""));
+	SetDlgItemText(IDC_EDIT_IMEI,_T(""));
 	GetDlgItem(IDC_EDIT_SN)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_WIFIMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_BTMAC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(FALSE);
+	GetDlgItem(IDC_EDIT_IMEI)->EnableWindow(FALSE);
 	//GetDlgItem(IDC_EDIT_LOADER)->EnableWindow(FALSE);
 	//GetDlgItem(ID_BTN_WRITE)->SetWindowText(GetLocalString(_T("IDS_TEXT_READ_BUTTON")).c_str());
 
@@ -396,6 +398,11 @@ VOID CWNpctoolDlg::InitUi()
 		if (m_Configs.LanMac.bEnable&&m_Configs.LanMac.nAutoMode == MODE_MANUAL)
 		{
 			GetDlgItem(IDC_EDIT_LANMAC)->EnableWindow(TRUE);
+		}
+
+		if (m_Configs.Imei.bEnable&&m_Configs.Imei.nAutoMode == MODE_MANUAL)
+		{
+			GetDlgItem(IDC_EDIT_IMEI)->EnableWindow(TRUE);
 		}
 	}
 
@@ -669,6 +676,7 @@ BOOL CWNpctoolDlg::WriteProc()
 	bool            bskip_force_btmac   = FALSE;
 	bool            bskip_force_devsn   = FALSE;
 	bool            bskip_force_lanmac  = FALSE;
+	bool			bskip_force_imei	= FALSE;
 	CString         strPrompt;
 	DWORD   dwTotalTick;
 	dwTotalTick     = GetTickCount();
@@ -775,6 +783,25 @@ BOOL CWNpctoolDlg::WriteProc()
 		}
 		AddPrompt(GetLocalString(_T("IDS_INFO_LANMAC_PASS")).c_str(),LIST_INFO);
 	}
+
+	//5.烧写imei,先写后读，读出来的值与写进去的值一致则成功，否则失败
+	if (m_bUserStop) {
+		goto WriteProc_Exit;
+	}  
+	if (m_Configs.Imei.bEnable)
+	{
+		AddPrompt(GetLocalString(_T("IDS_INFO_IMEI_WRITE")).c_str(),LIST_INFO);
+		strPrompt.Format(TEXT("IMEI:%s"),(LPCTSTR)m_strCurImei);
+		AddPrompt(strPrompt,LIST_INFO);
+		if(!WriteItem(ITEM_IMEI))
+		{
+			LDEGMSG((CLogger::DEBUG_ERROR,"Write IMEI failed."));
+			AddPrompt(GetLocalString(_T("IDS_ERROR_IMEI_FAIL")).c_str(),LIST_ERR);
+			goto WriteProc_Exit;
+		}
+		AddPrompt(GetLocalString(_T("IDS_INFO_IMEI_PASS")).c_str(),LIST_INFO);
+	}
+
 	if (m_Configs.bReboot)
 	{
 		AddPrompt(GetLocalString(_T("IDS_INFO_DEVICE_REBOOT")).c_str(),LIST_INFO);
@@ -792,7 +819,8 @@ WriteProc_Exit:
 		SaveWriteResultOnPass(bSuccess,((bskip_force_devsn)  ?0:FIELD_DEVSN  )|
 			((bskip_force_wifimac)?0:FIELD_WIFIMAC)|
 			((bskip_force_btmac)  ?0:FIELD_BTMAC  )|
-			((bskip_force_lanmac)  ?0:FIELD_LANMAC));
+			((bskip_force_lanmac)  ?0:FIELD_LANMAC)|
+			((bskip_force_imei)  ?0:FIELD_IMEI));
 	}
 	if (m_bUserStop) {
 		strPrompt.Format(GetLocalString(_T("IDS_INFO_USER_ABORT")).c_str());
@@ -823,7 +851,7 @@ BOOL CWNpctoolDlg::ReadMac(int nItemID)
 {
 	BOOL	bRet;
 	//int nSize;
-	USHORT nBufSize;
+	USHORT nBufSize=30;
 	BYTE buf[512];
 	CString strMac;
 
@@ -831,7 +859,7 @@ BOOL CWNpctoolDlg::ReadMac(int nItemID)
 	bRet = RK_ReadProvisioningData(nItemID,buf,nBufSize);
 	if (!bRet)
 	{
-		LDEGMSG((CLogger::DEBUG_ERROR,"RK_ReadProvisioningData failed."));
+		LDEGMSG((CLogger::DEBUG_ERROR,("RK_WriteProvisioningData readback failed.nReadbackSize=%d"),nBufSize));
 		return FALSE;
 	}
 
@@ -907,7 +935,7 @@ BOOL CWNpctoolDlg::WriteMac(CString strMac,int nItemID)
 	bRet = RK_ReadProvisioningData(nItemID,readback,nReadbackSize);
 	if (!bRet)
 	{
-		LDEGMSG((CLogger::DEBUG_ERROR,"RK_WriteProvisioningData readback failed."));
+		LDEGMSG((CLogger::DEBUG_ERROR,("RK_WriteProvisioningData readback failed.nReadbackSize=%d"),nReadbackSize));
 		return FALSE;
 	}
 	LDEGMSG((CLogger::DEBUG_ERROR,("item=%d,read mac %02x:%02x:%02x:%02x:%02x:%02x"),nItemID,readback[0],readback[1],readback[2],readback[3],readback[4],readback[5]));
@@ -947,6 +975,9 @@ BOOL CWNpctoolDlg::WriteItem(int nItemID)
 	}else if (ITEM_LANMAC == nItemID)
 	{
 		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurLanMac);
+	}else if (ITEM_IMEI == nItemID)
+	{
+		bRet = cmStrCode::UnicodeToAnsi(lpszData,nSize,m_strCurImei);
 	}
 	else
 	{
@@ -1032,6 +1063,9 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 	}else if (ITEM_LANMAC == nItemID)
 	{
 		SetDlgItemText(IDC_EDIT_LANMAC,lpszValue);
+	}else if (ITEM_IMEI == nItemID)
+	{
+		SetDlgItemText(IDC_EDIT_IMEI,lpszValue);
 	}
 	else
 	{
@@ -1159,8 +1193,37 @@ BOOL CWNpctoolDlg::ReadProc()
             goto Exit_Read;
         }
     }
-	RK_ResetRockusb();
-	Sleep(1000);//sleep for device offline
+
+	if (m_Configs.Imei.bEnable)
+	{
+		strPrompt.Format(GetLocalString(_T("IDS_READ_SS")).c_str(),TEXT("IMEI"));
+		AddPrompt(strPrompt,LIST_INFO);
+		if (ReadItem(ITEM_IMEI))
+		{
+			strPrompt.Format(GetLocalString(_T("IDS_READ_SS_PASS")).c_str(),TEXT("IMEI"));
+			AddPrompt(strPrompt,LIST_INFO);
+			LDEGMSG((CLogger::DEBUG_INFO,"Read LanMac successfully."));
+		}
+		else
+		{
+			strPrompt.Format(GetLocalString(_T("IDS_READ_SS_FAIL")).c_str(),TEXT("IMEI"));
+			AddPrompt(strPrompt,LIST_ERR);
+			LDEGMSG((CLogger::DEBUG_ERROR,"Read LanMac failed."));
+			goto Exit_Read;
+		}
+	}
+
+	if (m_Configs.bReboot)
+	{
+		AddPrompt(GetLocalString(_T("IDS_INFO_DEVICE_REBOOT")).c_str(),LIST_INFO);
+		if (!RK_ResetRockusb())
+		{
+			AddPrompt(GetLocalString(_T("IDS_INFO_DEVICE_REBOOT_FAIL")).c_str(),LIST_ERR);
+			goto Exit_Read;
+		}
+		Sleep(1000);//sleep for device offline
+		AddPrompt(GetLocalString(_T("IDS_INFO_DEVICE_REBOOT_PASS")).c_str(),LIST_INFO);
+	}
 	bSuccess = TRUE;
 Exit_Read:
 	m_bRun = FALSE;
@@ -1305,13 +1368,6 @@ BOOL CWNpctoolDlg::SaveWriteResultOnPass(BOOL bPass,DWORD mask)
 		if (FIELD_LANMAC&mask)  {
 			if(MODE_AUTO == m_Configs.LanMac.nAutoMode) {
 				inc = TRUE;
-				//if (m_Configs.BtMac.nRemainCount!=-1) { /*-1 means no limit*/
-				//    m_Configs.BtMac.nRemainCount--;
-				//    if (m_Configs.BtMac.nRemainCount == 0) {
-				//        m_Configs.BtMac.strCurrentMac = _T("");
-				//        inc = FALSE;
-				//    } 
-				//}
 				if (m_Configs.LanMac.nRemainCount!=0&&m_Configs.LanMac.nRemainCount!=-1) { /*-1 means no limit*/
 					m_Configs.LanMac.nRemainCount--;
 				}
@@ -1326,6 +1382,28 @@ BOOL CWNpctoolDlg::SaveWriteResultOnPass(BOOL bPass,DWORD mask)
 			{
 				m_Configs.confPath.lFilePos[FLAG_LANMAC] = m_Configs.curFilePos[FLAG_LANMAC];
 				m_Configs.confPath.dwLinePos[FLAG_LANMAC] ++;  //just inccrease when get a correct item
+			}
+		}
+	}
+
+	if(m_Configs.Imei.bEnable) {
+		if (FIELD_IMEI&mask)  {
+			if(MODE_AUTO == m_Configs.Imei.nAutoMode) {
+				inc = TRUE;
+				if (m_Configs.Imei.nRemainCount1!=0&&m_Configs.Imei.nRemainCount1!=-1) { /*-1 means no limit*/
+					m_Configs.Imei.nRemainCount1--;
+				}
+				if(inc) {
+					strTmp = m_Configs.Imei.strCurrentImei1.c_str();
+					HexStrIncrease(strTmp.GetBuffer());
+					m_Configs.Imei.strCurrentImei1 = strTmp.GetString();
+					strTmp.ReleaseBuffer();
+				}
+			}
+			if (MODE_FILE == m_Configs.Imei.nAutoMode)
+			{
+				m_Configs.confPath.lFilePos[FLAG_IMEI1] = m_Configs.curFilePos[FLAG_IMEI1];
+				m_Configs.confPath.dwLinePos[FLAG_IMEI1] ++;  //just inccrease when get a correct item
 			}
 		}
 	}
@@ -1419,7 +1497,7 @@ BOOL CWNpctoolDlg::OnStartRead()
 		m_bExistLoader = FALSE;
 	m_csScanLock.Unlock();
 
-    if (!(m_Configs.devsn.bEnable||m_Configs.WifiMac.bEnable||m_Configs.BtMac.bEnable||m_Configs.LanMac.bEnable))
+    if (!(m_Configs.devsn.bEnable||m_Configs.WifiMac.bEnable||m_Configs.BtMac.bEnable||m_Configs.LanMac.bEnable||m_Configs.Imei.bEnable))
     {
         strPromt = GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str();
         goto OnStartReadExit;
@@ -1452,7 +1530,7 @@ BOOL CWNpctoolDlg::OnStartWrite(bool bAuto)
 	CString     strPromt;
 	CString		strText;
 
-	if (!(m_Configs.devsn.bEnable||m_Configs.WifiMac.bEnable||m_Configs.BtMac.bEnable||m_Configs.LanMac.bEnable))
+	if (!(m_Configs.devsn.bEnable||m_Configs.WifiMac.bEnable||m_Configs.BtMac.bEnable||m_Configs.LanMac.bEnable||m_Configs.Imei.bEnable))
 	{
 		strPromt = GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str();
 		//MessageBox(GetLocalString(_T("IDS_ERROR_NO_WRITE")).c_str(),_T("Error"),MB_OK|MB_ICONERROR);
@@ -1566,6 +1644,33 @@ BOOL CWNpctoolDlg::OnStartWrite(bool bAuto)
 		}
 		SetDlgItemText(IDC_EDIT_LANMAC,m_strCurLanMac);
 	}
+
+	if (m_Configs.Imei.bEnable)
+	{
+		if (MODE_MANUAL == m_Configs.Imei.nAutoMode)
+		{
+			GetDlgItemText(IDC_EDIT_LANMAC,m_strCurImei);
+		}
+		else if (MODE_AUTO == m_Configs.Imei.nAutoMode)
+		{
+			m_strCurImei = m_Configs.Imei.strCurrentImei1.c_str();
+			if (m_strCurImei.IsEmpty()||m_Configs.Imei.nRemainCount1==0) {
+				strPromt = GetLocalString(_T("IDS_ERROR_OUT_OF_IMEI")).c_str();
+				goto OnStartWriteExit;
+			}
+		}
+		else
+		{
+
+		}
+		if(!CheckImeiStr(m_strCurImei)) 
+		{
+			strPromt.Format(GetLocalString(_T("IDS_ERROR_INVALID_IMEI")).c_str(),m_strCurImei);
+			goto OnStartWriteExit;
+		}
+		SetDlgItemText(IDC_EDIT_IMEI,m_strCurImei);
+	}
+
 	m_csScanLock.Lock();
 	if (m_nDeviceCount < 1)
 	{

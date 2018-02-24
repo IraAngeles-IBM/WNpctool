@@ -216,6 +216,6 @@ void CLanMacDlg::OnEnSetfocusEditLanmacSegmentCount()
 	GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_CURRENT,strCurrentMac);
 	GetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_END,strEndMac);
 
-	nCount = cmNumString::StrToSLong(strEndMac.Right(6),16) - cmNumString::StrToSLong(strCurrentMac.Right(6),16) + 1;
+	nCount = cmNumString::StrToSLong(strEndMac.Right(6),10) - cmNumString::StrToSLong(strCurrentMac.Right(6),10) + 1;
 	SetDlgItemText(IDC_EDIT_LANMAC_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
 }

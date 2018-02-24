@@ -4,6 +4,7 @@
 #include "LanMacDlg.h"
 #include "SnDlg.h"
 #include "WifiMacDlg.h"
+#include "ImeiDlg.h"
 #include "settings/SettingBase.h"
 
 
@@ -32,10 +33,11 @@ public:
 	CDialog			*m_ChildCWnds[5];
 	int				m_iCurSelTab;
 	CSnDlg			m_SnDlg;
+
 	CWifiMacDlg		m_WifiMacDlg;
 	CLanMacDlg		m_LanMacDlg;
 	CBtMacDlg		m_BtMacDlg;
-
+	ImeiDlg			m_ImeiDlg;
 	VOID			UpdateInterface();
 	void			OnSizeCtl( int cx, int cy);
 

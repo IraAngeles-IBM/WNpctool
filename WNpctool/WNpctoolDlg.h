@@ -41,13 +41,15 @@ using namespace cm;
 #define FIELD_WIFIMAC   2
 #define FIELD_BTMAC		4
 #define FIELD_LANMAC    8
-#define FIELD_ALL      16
+#define FIELD_IMEI	   16
+#define FIELD_ALL      32
 
 enum ENUM_WRITEITEM_ID{
 	ITEM_SN = 1,
 	ITEM_WIFIMAC,
 	ITEM_LANMAC,
 	ITEM_BTMAC,
+	ITEM_IMEI,
 
 };
 typedef struct  
@@ -100,6 +102,7 @@ private:
 	CString         m_strCurWifiMac;
 	CString         m_strCurBtMac;
 	CString         m_strCurLanMac;
+	CString         m_strCurImei;
 
 	BOOL			m_bUserStop;
 	BOOL            m_bStarWrite;

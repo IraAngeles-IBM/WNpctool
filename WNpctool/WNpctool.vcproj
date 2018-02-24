@@ -207,6 +207,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ImeiDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\LanMacDlg.cpp"
 				>
 			</File>
@@ -270,6 +274,10 @@
 			</File>
 			<File
 				RelativePath=".\debug.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ImeiDlg.h"
 				>
 			</File>
 			<File

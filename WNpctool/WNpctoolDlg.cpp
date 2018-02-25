@@ -416,7 +416,40 @@ VOID CWNpctoolDlg::InitUi()
 	font.Detach();
 	m_listInfo.SetWindowBKColor(RGB(0,0,0));
 }
+BOOL CWNpctoolDlg::AdbToRockusb()
+{
+	CSpawn					ShellSpawn;
+	wchar_t     strCmd[2600] = {0};
+	int						n = 40;
+	CString					strText;
 
+	swprintf(strCmd,nof(strCmd),TEXT("adb.exe reboot loader"));
+	if(ShellSpawn.Exe(strCmd,50000, true)) 
+	{
+		//if(0 != ShellSpawn.GetResult()) 
+		//{
+		//	return FALSE;
+		//}
+	}
+	else
+	{
+		return FALSE;
+	}
+	while(n--)
+	{
+		m_lblDevice.GetWindowText(strText);
+		if (strText.Find(_T("LOADER"))!=-1)
+		{
+			break;
+		}
+		Sleep(500);	
+	}
+	if (n == -1)
+	{ 
+		return FALSE;
+	}
+	return TRUE;
+}
 BOOL CWNpctoolDlg::LoadConfig()
 {
 	CString strConfigPath;
@@ -678,6 +711,7 @@ BOOL CWNpctoolDlg::WriteProc()
 	bool            bskip_force_lanmac  = FALSE;
 	bool			bskip_force_imei	= FALSE;
 	CString         strPrompt;
+	CString			strText;
 	DWORD   dwTotalTick;
 	dwTotalTick     = GetTickCount();
 
@@ -686,6 +720,14 @@ BOOL CWNpctoolDlg::WriteProc()
 	}
 
 	AddPrompt(GetLocalString(_T("IDS_INFO_START_WRITE")).c_str(),LIST_INFO);
+	m_lblDevice.GetWindowText(strText);
+	if (strText.Find(_T("ADB"))!= -1)
+	{
+		if(!AdbToRockusb())
+		{
+			AddPrompt(GetLocalString(_T("IDS_ERROR_REBOOT_LOADER")).c_str(),LIST_INFO);
+		}
+	}
 	//download boot
 	if ((!m_bExistLoader)&&(!m_bDownBoot))
 	{
@@ -854,6 +896,7 @@ BOOL CWNpctoolDlg::ReadMac(int nItemID)
 	USHORT nBufSize=30;
 	BYTE buf[512];
 	CString strMac;
+	CString strPrompt;
 
 	LDEGMSG((CLogger::DEBUG_ERROR,"-------------------Read Mac----------------"));
 	bRet = RK_ReadProvisioningData(nItemID,buf,nBufSize);
@@ -877,12 +920,18 @@ BOOL CWNpctoolDlg::ReadMac(int nItemID)
 	strMac = BytesToHexStr(buf,nBufSize);
 	if (ITEM_WIFIMAC == nItemID)
 	{
+		strPrompt.Format(_T("WIFIMAC:%s"),strMac);
+		AddPrompt(strPrompt,LIST_INFO);
 		SetDlgItemText(IDC_EDIT_WIFIMAC,strMac);
 	}else if (ITEM_BTMAC == nItemID)
 	{
+		strPrompt.Format(_T("BTMAC:%s"),strMac);
+		AddPrompt(strPrompt,LIST_INFO);
 		SetDlgItemText(IDC_EDIT_BTMAC,strMac);
 	}else if (ITEM_LANMAC == nItemID)
 	{
+		strPrompt.Format(_T("LANMAC:%s"),strMac);
+		AddPrompt(strPrompt,LIST_INFO);
 		SetDlgItemText(IDC_EDIT_LANMAC,strMac);
 	}
 	else
@@ -1026,6 +1075,7 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 	int nSize;
 	USHORT nBufSize;
 	BYTE buf[512];
+	CString strPrompt;
 	nBufSize = 512;
 	bRet = RK_ReadProvisioningData(nItemID,buf,nBufSize);
 	if (!bRet)
@@ -1033,14 +1083,6 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 		LDEGMSG((CLogger::DEBUG_ERROR,"RK_ReadProvisioningData failed."));
 		return FALSE;
 	}
-	//if (nBufSize==0)
-	//{
-	//	if (m_pLogObject)
-	//	{
-	//		m_pLogObject->Record(_T("Error:RK_ReadProvisioningData return size 0\r\n."));
-	//	}
-	//	return FALSE;
-	//}
 
 	if (nBufSize != 0)
 	{
@@ -1053,6 +1095,8 @@ BOOL CWNpctoolDlg::ReadItem(int nItemID)
 	}
 	if (ITEM_SN == nItemID)
 	{
+		strPrompt.Format(_T("SN:%s"),lpszValue);
+		AddPrompt(strPrompt,LIST_INFO);
 		SetDlgItemText(IDC_EDIT_SN,lpszValue);
 	}else if (ITEM_WIFIMAC == nItemID)
 	{
@@ -1084,13 +1128,21 @@ BOOL CWNpctoolDlg::ReadProc()
 	BOOL bRet;
 	CString strPrompt;
 	DWORD   dwTotalTick;
+	CString	strText;
 	dwTotalTick     = GetTickCount();
 	if (m_listInfo.GetCount()>0) {
 		PostMessage(WM_UPDATE_MSG,UPDATE_LIST,LIST_EMPTY);
 	}
 
 	AddPrompt(GetLocalString(_T("IDS_READ_START")).c_str(),LIST_INFO);
-
+	m_lblDevice.GetWindowText(strText);
+	if (strText.Find(_T("ADB"))!= -1)
+	{
+		if(!AdbToRockusb())
+		{
+			AddPrompt(GetLocalString(_T("IDS_ERROR_REBOOT_LOADER")).c_str(),LIST_INFO);
+		}
+	}
 	//download boot
 	if ((!m_bExistLoader)&&(!m_bDownBoot))
 	{
@@ -1285,15 +1337,15 @@ BOOL CWNpctoolDlg::SaveWriteResultOnPass(BOOL bPass,DWORD mask)
 				if(inc) {
 					m_Configs.devsn.strCurrentSn = m_Configs.devsn.strCurrentSn.substr(m_Configs.devsn.strPrefix.length());
 					strTmp = m_Configs.devsn.strCurrentSn.substr(0,m_Configs.devsn.strCurrentSn.length()-m_Configs.devsn.strSuffix.length()).c_str();
-					if (m_Configs.devsn.bHexCarry) {
-						HexStrIncreaseSkipAlpha(strTmp.GetBuffer());
-						m_Configs.devsn.strCurrentSn = strTmp.GetString();
-						strTmp.ReleaseBuffer();
-					} else {
+					//if (m_Configs.devsn.bHexCarry) {
+					//	HexStrIncreaseSkipAlpha(strTmp.GetBuffer());
+					//	m_Configs.devsn.strCurrentSn = strTmp.GetString();
+					//	strTmp.ReleaseBuffer();
+					//} else {
 						IntStrIncreaseSkipAlpha(strTmp.GetBuffer());
 						m_Configs.devsn.strCurrentSn = strTmp.GetString();
 						strTmp.ReleaseBuffer();
-					}
+					//}
 					//strTmp = m_Configs.devsn.strPrefix + m_Configs.devsn.strCurrentSn + m_Configs.devsn.strSuffix;
 					m_Configs.devsn.strCurrentSn = m_Configs.devsn.strPrefix + m_Configs.devsn.strCurrentSn + m_Configs.devsn.strSuffix;
 				}
@@ -1489,7 +1541,7 @@ BOOL CWNpctoolDlg::OnStartRead()
 		goto OnStartReadExit;
 	}
 	m_lblDevice.GetWindowText(strText);
-	if (strText.Find(_T("LOADER"))!=-1)
+	if (strText.Find(_T("LOADER"))!=-1||strText.Find(_T("ADB"))!=-1)
 	{
 		m_bExistLoader = TRUE;
 	}
@@ -1682,7 +1734,7 @@ BOOL CWNpctoolDlg::OnStartWrite(bool bAuto)
 		goto OnStartWriteExit;
 	}
 	m_lblDevice.GetWindowText(strText);
-	if (strText.Find(_T("LOADER"))!=-1)
+	if (strText.Find(_T("LOADER"))!=-1||strText.Find(_T("ADB"))!=-1)
 	{
 		m_bExistLoader = TRUE;
 	}

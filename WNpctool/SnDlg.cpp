@@ -250,7 +250,7 @@ void CSnDlg::OnEnSetfocusEditDevsnSegmentCount()
 	GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_CURRENT,strStartSN);
 	GetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_END,strEndSN);
 
-	nCount = cmNumString::StrToSLong(strEndSN.Right(6),16) - cmNumString::StrToSLong(strStartSN.Right(6),16) + 1;
+	nCount = cmNumString::StrToSLong(strEndSN.Right(6),10) - cmNumString::StrToSLong(strStartSN.Right(6),10) + 1;
 	SetDlgItemText(IDC_EDIT_DEVSN_SEGMENT_COUNT,(-1 == nCount)?_T("0"):cmNumString::NumToStr(nCount,10));
 }
 

@@ -215,6 +215,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\scriptexe.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SnDlg.cpp"
 				>
 			</File>
@@ -290,6 +294,10 @@
 			</File>
 			<File
 				RelativePath=".\upgradeLib\RKUpgradeDll.h"
+				>
+			</File>
+			<File
+				RelativePath=".\scriptexe.h"
 				>
 			</File>
 			<File

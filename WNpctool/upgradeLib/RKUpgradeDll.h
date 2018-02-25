@@ -816,7 +816,7 @@ Return  :   TRUE:           SUCCESSED
 Notes   :   
 Author  :   Steven Chen
 ----------------------------------------------------------------------*/
-//RKUPGRADE_API BOOL _stdcall RK_AdbToRockusb(DWORD dwLayer=0);
+RKUPGRADE_API BOOL _stdcall RK_AdbToRockusb(DWORD dwLayer=0);
 
 /*----------------------------------------------------------------------
 Name    :   RK_SendMscCommand

@@ -18,6 +18,7 @@ using namespace cm;
 #include "./XListBox/XListBox.h"
 #include "FontStatic/FontStatic.h"
 #include "debug.h"
+#include "scriptexe.h"
 
 #define WM_COM_ADD		    1
 #define WM_COM_RM		    2
@@ -137,6 +138,7 @@ private:
 	BOOL	OnStartWrite(bool bAuto);
 	std::wstring GetLocalString(std::wstring strKey);
 	VOID    UpdateMenuItem();
+	BOOL	AdbToRockusb();
 
 // й╣ож
 protected:
